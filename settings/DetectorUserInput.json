@@ -1,0 +1,102 @@
+{
+    "ID": 0,
+    "RunLength": 60,
+    "S3UniqueKey": "test",
+    "SimulationName": "test",
+    "ExecutionTimeStep": 0.1,
+    "Scenario": {
+        "scenario_id": 6,
+        "options": {
+            "fully_connected": true,
+            "comp_submission": false,
+            "human_name": "Human_3",
+            "search_area_x": 400,
+            "search_area_y": 90
+        },
+        "weather_effects": []
+    },
+    "Environment": {
+        "Name": "HospitalExample",
+        "StreamVideo": true
+    },
+    "Modules": {
+        "HighLevelBehavior": {
+            "Level": 1,
+            "States": [],
+            "Parameters": {
+                "completed_waypoint_distance": 2.0
+            },
+            "ClassName": "PathFollowing",
+            "InputArgs": {},
+            "ReturnValues": [
+                "Position",
+                "Heading"
+            ]
+        },
+        "PathPlanning": {
+            "Level": 1,
+            "States": [],
+            "Parameters": {},
+            "ClassName": "NoPlanner",
+            "InputArgs": {},
+            "ReturnValues": [
+                "Position"
+            ]
+        },
+        "Detector": {
+            "Level": 1,
+            "States": [],
+            "Parameters": {
+                "Detector": "Colosseum",
+                "Options": {
+                    "use": true,
+                    "record": true,
+                    "method": "Colosseum",
+                    "masks": [
+                        "Human*"
+                    ]
+                }
+            },
+            "ClassName": "ColosseumDetector",
+            "InputArgs": {},
+            "ReturnValues": []
+        }
+    },
+    "Communications": {
+        "Protocol": "TCP",
+        "TransmissionRate": 0.2,
+        "CommunicationDistance": "200",
+        "Encrypt": true
+    },
+    "CameraParameters": {
+        "FrameRate": 24.0,
+        "ImageHeight": 720,
+        "ImageWidth": 1280,
+        "DistanceToSwarm": 5.0,
+        "Record": false
+    },
+    "Swarm": {
+        "drone_names": [
+            "Drone1"
+        ],
+        "number_of_drones": "1",
+        "drone_model": "airSimPawn",
+        
+        "collision_avoidance": false,
+        "sensors": {
+            "lidar": {
+                "method": "AirSim",
+                "hardware": "Velodyne Puck"
+            }
+        },
+        "detections": {
+            "use": false,
+            "record": false,
+            "method": "AirSim",
+            "masks": [
+                "Human*"
+            ]
+        },
+        "autopilot": "carrot"
+    }
+}
