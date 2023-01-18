@@ -13,16 +13,38 @@ Python Dependencies:
 First, ensure that you have installed the dependencies as listed in
 the `requirements.txt` folder. This can be installed with `python3 -m pip install requirements.txt`.
   
-Next, ensure you have followed directions for setting up the SWARM Core
-Container, which will provides a server for utilizing and interacting with the core
-simulation system.
-### Windows
-First, you will need to install NVIDIA Docker on WSL 2: [Instructions](https://docs.docker.com/desktop/windows/wsl/).
+## Installing SWARM Core
+You will be provided with a tar file that contains the SWARM Core system,
+which is a server that manages the entire simulation process.
+
+### Step 1:
+For Ubuntu, please follow the instructions to set up `nvidia-docker` here: [Instructions - Linux](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
   
-Next, you will need to load the container with: `COMMAND`.
+### Step 2:
+Please download the tar file that was provided to you in the welcome email,
+which will be a Google Drive link.
   
+Next, in the same directory where you put the tar file, you will load the container into the Docker engine: `docker load --input TAR_FILE_NAME`.
+  
+**Note**`TAR_FILE_NAME` refers to the name of the tar file provided.
+  
+Please be aware that this will take several minutes as the containers are generally very large.
+  
+### Step 3:
+Once the container has been loaded, you can run `docker image list` and you should see the container listed
+as the same name as the tar file.
+  
+### Step 4:
+In the `utils` folder of this repository, there is a shell script for running the container. This will
+automatically start all services that are neededd to run. You can move this shell script wherever you like.
+  
+Once you have moved said file, please create a directory in that same place called `.cache` and allow writing
+permissions on this folder with `chmod 777 .cache`. This cache allows a small cache to be stored for license keys
+and certain metadata that is required to run the system.
+  
+### Step 5
 Next, create a file called `LicenseKey.json` in the `settings` folder and ensure it has the following
-layout:
+layout, with the key and account id provided in the welcome email:
 ```
 {
     "Key": "YOUR LICENSE KEY HERE",
@@ -38,19 +60,15 @@ cause your requests to be denied when running simuluations. The `AccountID` will
 To begin, if you have a local installation of the SWARM Developer system, you
 will be able to quickly get started.
   
-### Running the SWARM Core System
-First, you need to run the core system before making any requests. This is platform 
-dependent so please following these instructions. (**NOTE** Please be aware we do not support Mac due to graphics card issues)
+First, start the SWARM Core server by running the script `./run_swarm_container.sh` in the same directory where you created the `.cache` folder. You do not need to have a GUI
+running to do this (ie. this can be done on a remote server as well).
   
-#### Linux
-For Ubuntu, please follow the instructions to set up `nvidia-docker` here: [Instructions - Linux](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
-
-An example script has been provided in the root of this project called `main.py`.
-Please view this file as an example of how to run a simulation. Other examples are 
-provided in the `examples` folder and the documentation is also available at:
-[SWARM Developer Documentation](https://codexlabsllc.github.io/SWARMSimFirmware/).
+You can run an example simulation by running `python3 main.py --map-name SWARMHome` or checkout the examples 
+for other functions as well.
   
-You can run an example simulation by running `python3 main.py --map-name SWARMHome`.
+To view the visuals, go to any web browser on the same computer and type in `127.0.0.1` once the simulation
+is running. Click `Start` and you will now have an interactive simulation, where you can fly around (hit the `m` key and use the arrow keys) 
+and you can also open or close doors (hit the `o` key) and turn on the lights (hit the `l` key).
 
 ## Running A Simulation - Cloud
 Get started in the cloud is even easier. Just ensure that you have this repository
@@ -62,4 +80,6 @@ install with:
 ```
 python3 main.py --map-name SWARMHome --ip-address IP_ADDRESS
 ```
-  
+
+## Additional Documentation
+Please view the additional documentation at [SWARM Developer Documentation](https://codexlabsllc.github.io/SWARMSimFirmware/)
