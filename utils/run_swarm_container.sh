@@ -13,4 +13,4 @@ else
     $_mkdir -p ".cache"
 fi
 
-docker run -it --rm --gpus=all --runtime=nvidia --network=host -v $pwd/.cache:/home/airsim_user/SWARMCore/core/.cache swarm_home_v1.5.0
+docker run -it --rm --gpus=all --runtime=nvidia --network=host -v $pwd/.cache:/home/airsim_user/SWARMCore/.cache swarm_home_v1.5.0
