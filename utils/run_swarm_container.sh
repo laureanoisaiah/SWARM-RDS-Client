@@ -6,10 +6,11 @@
 # at runtime.
 
 if [ -d ".cache" ]
+then
     echo "Directory .cache exists."
 else
     echo "Creating .cache directory"
     $_mkdir -p ".cache"
 fi
 
-docker run -it --rm --gpus=all --runtime=nvidia --network=host -v $pwd.cache:/home/airsim_user/SWARMCore/core/.cache swarm_home_v1.5.0
+docker run -it --rm --gpus=all --runtime=nvidia --network=host -v $pwd/.cache:/home/airsim_user/SWARMCore/core/.cache swarm_home_v1.5.0

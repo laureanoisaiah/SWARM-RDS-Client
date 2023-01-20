@@ -135,3 +135,4 @@ data/
 settings/SubmissionHistory.json
 settings/SubmissionList.json
 settings/LicenseKey.json
+*/.cache
