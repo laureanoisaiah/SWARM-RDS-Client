@@ -15,6 +15,7 @@ Python Dependencies:
 ## Getting Started
 First, ensure that you have installed the dependencies as listed in
 the `requirements.txt` folder. This can be installed with `python3 -m pip install -r requirements.txt`.
+**Note** If you are on Windows, use `python` instead of `python3`.
   
 ## Installing the License File
 You will need a License to run the SWARM system. To start, please go to your
