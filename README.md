@@ -13,8 +13,16 @@ Python Dependencies:
 - Numpy [version >= 1.22]
 
 ## Getting Started
-First, ensure that you have installed the dependencies as listed in
-the `requirements.txt` folder. This can be installed with `python3 -m pip install -r requirements.txt`.
+First, please ensure that you have Git and something like VS Code installed. If you don't, you 
+can download git [here](https://git-scm.com/downloads) and VS Code [here](https://code.visualstudio.com/download).
+  
+Once you have these installed, open VS Code (or something like it, perhaps Powershell or a Terminal) and clone 
+this repository with `git clone https://github.com/CodexLabsLLC/SWARMDeveloperClient`. Then, ensure you either 
+go to this directory in your terminal or have opened the folder in VS Code.
+  
+Next, ensure that you have installed the dependencies as listed in
+the `requirements.txt` folder. This can be installed with `python3 -m pip install -r requirements.txt` in a Powershell terminal 
+in VS Code or in a regular terminal (Linux/Mac).
 **Note** If you are on Windows, use `python` instead of `python3`.
   
 ## Installing the License File
