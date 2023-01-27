@@ -14,7 +14,6 @@ import glob
 import time
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-import subprocess
 
 from uuid import uuid4
 
@@ -38,15 +37,6 @@ class SWARM():
         self.generate_submission_tracking()
         self.map_name = ""
         self.debug = debug
-        self.setup_folders()
-
-    def setup_folders(self) -> None:
-        """
-        Setup required folders for the SWARM System to operate properly.
-        """
-        dirs = os.listdir(".")
-        if "data" not in dirs:
-            subprocess.run(["mkdir", "data"])
 
     def regenerate_connection(self) -> None:
         """
@@ -382,7 +372,6 @@ class SWARM():
         except Exception:
             traceback.print_exc()
             return False
-            
 
     # =========================================================================
     #                       Validation Functions
@@ -483,23 +472,37 @@ class SWARM():
                 elif key == "Scenario":
                     valid_keys = ["Name", "Options"]
                     try:
-                        assert valid_keys == list(options.keys())
-                        assert self.validate_scenario_name(options["Name"])
-                    except AssertionError:
-                        print("Error! Please ensure you have the following sections: {}".format(valid_keys))
+                        if valid_keys != list(options.keys()):
+                            raise AssertionError("Error! Please ensure you have the following sections: {}".format(valid_keys))
+                        if not self.validate_scenario_name(options["Name"]):
+                            raise AssertionError("Scenario with name {} is not supported!".format(options["Name"]))
+                        if "LevelNames" in options["Options"]:
+                            for level_name in options["Options"]["LevelNames"]:
+                                if not self.validate_level_is_supported(settings_file["Environment"]["Name"], level_name):
+                                    raise AssertionError("Level {} is not supported for environment with name {}!".format(level_name, settings_file["Environment"]["Name"]))
+                        if "MultiLevel" in options["Options"]:
+                            if not isinstance(options["Options"]["MultiLevel"], bool):
+                                raise AssertionError("Error! The field MultiLevel must be a boolean value!")
+                    except AssertionError as error:
+                        print(error)
                         return False
                 elif key == "Environment":
-                    valid_keys = ['Name', 'StreamVideo']
+                    valid_keys = ['Name', 'StreamVideo', 'StartingLevelName']
                     try:
-                        assert "Name" in list(options.keys())
+                        if not "Name" in list(options.keys()):
+                            raise AssertionError('You must provide a Name that is in the environment')
                         if not self.validate_environment_name(options["Name"]):
                             raise AssertionError("Environment name {} is not valid!".format(options["Name"]))
                         if not isinstance(options["StreamVideo"], bool):
-                            print("Error! Please ensure the StreamVideo section is a boolean value")
+                            raise AssertionError("Error! Please ensure the StreamVideo section is a boolean value")
+                        if not isinstance(options["StartingLevelName"], str):
+                            raise AssertionError("Error! Please ensure the Level name is a string value")
+                        if options['StartingLevelName'] not in settings_file["Scenario"]["Options"]["LevelNames"]:
+                            raise AssertionError('Error! You must choose a level name that is in the Scenario Levels selected!\nValid options are: {}'.format(settings_file["Scenario"]["Options"]["LevelNames"]))
+                        if not self.validate_level_is_supported(options["Name"], options['StartingLevelName']):
+                            raise AssertionError("Level selected is not supported by this environment")
                     except AssertionError as error:
                         print(error)
-                        print("What you submitted: {}".format(list(options.keys())))
-                        print("Error! Please ensure you have the following sections: {}".format(valid_keys))
                         return False
                 elif key == "Data":
                     valid_options = ["Images", "VehicleState", "Video"]
@@ -657,6 +660,31 @@ class SWARM():
 
         return True
 
+    def validate_multi_level_trajectory_file(self, trajectory: dict) -> bool:
+        """
+        Iteration through multi-level trajectory files. 
+
+        ### Inputs:
+        - trajectory [dict] - list of trajectories
+
+        ### Outputs:
+        - trajectory_valid [bool] - True if the trajectory is valid, False otherwise
+        """
+        # We always want to keep the trajectory definition the same, as this
+        # will confuse the user if they have to put different names  for what
+        # is basically the same system.
+
+        # Always access the Trajectory via Trajectory, especially for Core
+        trajectory = trajectory["Trajectory"]
+        if isinstance(trajectory, list):
+            trajectory_valid = self.validate_trajectory_file(trajectory)
+        else:
+            # trajectory = trajectory["Trajectories"]
+            for level in trajectory.keys():
+                trajectory_valid = self.validate_trajectory_file(trajectory[level])
+                
+        return trajectory_valid
+
     def validate_trajectory_file(self, trajectory: dict) -> bool:
         """
         Validate the given trajectory file is valid to be run on the
@@ -671,7 +699,7 @@ class SWARM():
         """
         try:
             print("Validating the Trajectory!")
-            trajectory = trajectory["Trajectory"]
+            # trajectory = trajectory[next(iter(trajectory))]
             if len(trajectory) == 0:
                 raise AssertionError("Error! Your trajectory must contain at least 1 point!")
             valid_point_fields = ["X", "Y", "Z", "Heading", "Speed"]
@@ -688,8 +716,8 @@ class SWARM():
                         if value > 1000.0 or value < -1000.0:
                             raise AssertionError("{} value is invalid. Valid range is [-1000.0, 1000.0].".format(field_name))
                     elif field_name == "Z":
-                        if value > 0.0:
-                            print("WARNING! You have input a Z value that is greater the 0.0, which is below the starting point of the agent (ie. in the ground). Giving these values should only be done if you know the agent will not hit the ground and a negative value should be given for 'positive' altitude. ")
+                        if value > 0.5:
+                            print("WARNING! You have input a Z value that is greater the 0.5, which is below the starting point of the agent (ie. in the ground). Giving these values should only be done if you know the agent will not hit the ground and a negative value should be given for 'positive' altitude. ")
                         if value > 1000.0 or value < -1000.0:
                             raise AssertionError("{} value is invalid. Valid range is [-1000.0, 1000.0].".format(field_name))
                     elif field_name == "Heading":
@@ -706,6 +734,32 @@ class SWARM():
             traceback.print_exc()
             return False
 
+
+    def validate_level_is_supported(self, env_name: str, level_name: str) -> bool:
+        """
+        Validate that the level selected in the environment is valid.
+        We always validate the environment name before we validate
+        the level name, so we can say envs[env_name]["Levels"] easily
+        enough.
+
+        ### Inputs:
+        - env_name [str] The name of the environment to run
+        - level_name [str] The name of the level inside of the environment to run
+
+        ### Outputs:
+        - A boolean determining if this level is supported or not
+        """
+        with open("settings/SupportedEnvironments.json") as file:
+            envs = json.load(file)
+        try:
+            levels = envs['Environments'][env_name]['Levels']
+            assert level_name in levels
+            return True
+        except AssertionError:
+            print("Error! Level {} does not exist!\nSupported Levels are: {}".format(level_name, levels))
+        except Exception:
+            traceback.print_exc()
+            return False
 
     # =========================================================================
     #                       Core Message Functions
@@ -737,7 +791,7 @@ class SWARM():
             settings, trajectory = self.retrieve_sim_package(
                 sim_name, folder=folder)
             settings_valid = self.validate_settings_file(json.loads(settings))
-            trajectory_valid = self.validate_trajectory_file(json.loads(trajectory))
+            trajectory_valid = self.validate_multi_level_trajectory_file(json.loads(trajectory))
             if not settings_valid:
                 print("Simulation Run Failed.\nReason: Settings file invalid! Please see the settings folder!")
                 exit(1)
@@ -754,7 +808,62 @@ class SWARM():
             }
             completed = self.client.send_simulation_execution_package(
                 message)
-            print(completed)
+            if "Error" in completed.keys():
+                print("There was an error!")
+                print(completed["Error"])
+                return False
+            else:
+                self.update_submission_list(completed, folder=folder)
+                assert completed["Status"] == "Completed"
+                return completed["Status"] == "Completed"
+        except AssertionError:
+            print("Simulation could not be completed!")
+            return False
+        except Exception:
+            traceback.print_exc()
+            exit(1)
+
+    def run_view_only_simulation(self,
+                       map_name: str,
+                       sim_name: str,
+                       folder: str = "settings") -> bool:
+        """
+        Run a Simulation, waiting for the server to tell us when it has
+        been completed.
+
+        TODO This should be an Async function that allows the user
+        to do other things.
+
+        ### Inputs:
+        - map_name [str] The map to run
+        - sim_name [str] The name of the sim to run
+
+        ### Outputs:
+        - Returns an indicator of whether the simulation has been 
+          completed
+        """
+        try:
+            # Only connect once we are ready to send a command
+            
+            print("Running simulation {}".format(sim_name))
+
+            settings, trajectory = self.retrieve_sim_package(
+                sim_name, folder=folder)
+            settings_valid = self.validate_settings_file(json.loads(settings))
+            if not settings_valid:
+                print("Simulation Run Failed.\nReason: Settings file invalid! Please see the settings folder!")
+                exit(1)
+
+            self.client.connect()
+            message = {
+                "Command": "View Level",
+                "Settings": settings,
+                "Trajectory": trajectory,
+                "Sim_name": sim_name,
+                "Map_name": map_name
+            }
+            completed = self.client.send_simulation_execution_package(
+                message)
             if "Error" in completed.keys():
                 print("There was an error!")
                 print(completed["Error"])
