@@ -1,6 +1,6 @@
 {
-    "Origin": [0.0, 0.0, 0.0],
+    "Origin": [0.0, -3.5, 0.0],
     "CaptureSize": [30,30,30],
-    "ImageSize": [350, 350],
+    "ImageSize": [374, 374],
     "CaptureIncrement": 0.1
 }
