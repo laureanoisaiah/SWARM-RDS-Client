@@ -2,7 +2,9 @@
     "Environments": {
         "SWARMHome": {
             "Levels": [
-                "Level1"
+                "Home1",
+                "Home2",
+                "Home3"
             ]
         }
     }

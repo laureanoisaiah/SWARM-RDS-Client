@@ -10,7 +10,13 @@ then
     echo "Directory .cache exists."
 else
     echo "Creating .cache directory"
-    $_mkdir -p ".cache"
+    mkdir -p ".cache"
 fi
 
-docker run -it --rm --gpus=all --runtime=nvidia --network=host -v $pwd/.cache:/home/airsim_user/SWARMCore/.cache swarm_home_v1.5.0
+if [ ! $1 ]
+then
+    echo "Error! Please give the name of the container to run!"
+    echo "The container to run should be provided in the welcome email"
+fi
+
+# docker run -it --rm --gpus=all --runtime=nvidia --network=host -v $pwd/.cache:/home/airsim_user/SWARMCore/.cache $1

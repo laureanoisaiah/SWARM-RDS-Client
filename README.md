@@ -79,7 +79,7 @@ and certain metadata that is required to run the system.
 To begin, if you have a local installation of the SWARM Developer system, you
 will be able to quickly get started.
   
-First, start the SWARM Core server by running the script `./run_swarm_container.sh` in the same directory where you created the `.cache` folder. You do not need to have a GUI
+First, start the SWARM Core server by running the script `./run_swarm_container.sh swarm_home_v1.5.0.1` in the same directory where you created the `.cache` folder. You do not need to have a GUI
 running to do this (ie. this can be done on a remote server as well).
   
 You can run an example simulation by running:
