@@ -605,6 +605,15 @@ class SWARM():
                                 if not options["Images"]["Format"] in valid_image_types:
                                     raise AssertionError(
                                         "Error! {} is not a valid image format to save collected images".format(type))
+                                if not "ImagesPerSecond" in list(options[type].keys()):
+                                    raise AssertionError(
+                                        "\nError! You must include the parameter 'ImagesPerSecond' in the Images options!\n")
+                                if not isinstance(options[type]["ImagesPerSecond"], int):
+                                    raise AssertionError(
+                                        "\nError! ImagesPerSecond must be a integer value!!\n")
+                                if options[type]["ImagesPerSecond"] > 20 or options[type]["ImagesPerSecond"] < 1 :
+                                    raise AssertionError(
+                                        "\nError! ImagesPerSecond must be within the range of 1 to 20 images!\n")
                             elif type == "Video":
                                 if not options["Video"]["Format"] in valid_video_types:
                                     raise AssertionError(
