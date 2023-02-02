@@ -313,7 +313,7 @@ class SWARMClient(Thread):
                     bar.update(len(new_bytes))
 
                 except BlockingIOError:
-                    pass
+                    print("Blocking IO Error!")
                 except Exception:
                     traceback.print_exc()
 
