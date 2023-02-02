@@ -20,7 +20,7 @@ from core.validator import activate_license
 
 # from utils.constants import ENCODING_SCHEME
 ENCODING_SCHEME = "utf-8"
-BUFFER_SIZE = 8912 * 2
+BUFFER_SIZE = 4096
 
 
 class SWARMClient(Thread):
@@ -142,7 +142,7 @@ class SWARMClient(Thread):
         try:
             self.socket = socket.socket()
             self.socket.connect((self.address, self.port))
-            self.socket.setblocking(False)
+            # self.socket.setblocking(False)
             self.connected = True
             return True
         except Exception as error:
