@@ -20,7 +20,7 @@ from core.validator import activate_license
 
 # from utils.constants import ENCODING_SCHEME
 ENCODING_SCHEME = "utf-8"
-BUFFER_SIZE = 4096
+BUFFER_SIZE = 8192
 
 
 class SWARMClient(Thread):
