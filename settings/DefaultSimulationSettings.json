@@ -1,14 +1,13 @@
 {
     "ID": 0,
     "SimulationName": "example",
-    "RunLength": 60.0,
+    "RunLength": 30.0,
     "Scenario": {
         "Name": "DataCollection",
         "Options": {
             "MultiLevel": true,
             "LevelNames": [
-                "Home1",
-                "Home2"
+                "Home1"
             ]
         }
     },

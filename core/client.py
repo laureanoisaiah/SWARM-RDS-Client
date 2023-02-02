@@ -297,17 +297,19 @@ class SWARMClient(Thread):
             print("DEBUG: Handing Multipart Message")
         numb_packets = message["Body"]["Number Of Packets"]
         total_bytes = message["Body"]["Number Of Bytes"]
-        recv_bytes = b''
+        recv_bytes = list()
+        total_recv_bytes = 0
         print("Downloading {} bytes".format(total_bytes))
 
         if self.debug:
             print(f"DEBUG: Packets to download {numb_packets}")
         
         with tqdm(unit="B", unit_scale=True, desc="Data Tarball", total=total_bytes) as bar:
-            while len(recv_bytes) < total_bytes:
+            while total_recv_bytes < total_bytes:
                 try:
                     new_bytes = self.socket.recv(BUFFER_SIZE)
-                    recv_bytes += new_bytes
+                    recv_bytes.append(new_bytes)
+                    total_recv_bytes += len(new_bytes)
                     bar.update(len(new_bytes))
 
                 except BlockingIOError:
@@ -318,7 +320,8 @@ class SWARMClient(Thread):
         # Ensure we have received the full message
         #  assert total_bytes == bytes_received
 
-        return recv_bytes
+        recv_data = b''.join(recv_bytes)
+        return recv_data
 
     def send_simulation_execution_package(self,
                                           json_file: dict) -> dict:
