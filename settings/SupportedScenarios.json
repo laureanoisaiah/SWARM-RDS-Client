@@ -1,5 +1,7 @@
 {
     "Scenarios": [
-        "DataCollection"
+        "DataCollection",
+        "FreePlay",
+        "Navigation"
     ]
 }

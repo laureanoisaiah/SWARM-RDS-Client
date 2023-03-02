@@ -4,6 +4,11 @@
         "ValidModuleParameters": [
             "Level",
             "States",
+            "Algorithm",
+            "Publishes",
+            "Subscribes"
+        ],
+        "ValidAlgorithmParameters": [
             "Parameters",
             "ClassName",
             "InputArgs",
@@ -12,11 +17,95 @@
         ],
         "ValidModuleNames": [
             "HighLevelBehavior",
-            "PathPlanning",
+            "LowLevelPathPlanning",
+            "HighLevelPathPlanning",
             "ObstacleAvoidance",
             "Detector",
-            "VideoRecorder"
+            "VideoRecorder",
+            "Mapping"
         ],
+        "ValidMessageTypes": [
+            "MovementCommand",
+            "Trajectory",
+            "Position",
+            "LinearVelocity",
+            "AngularVelocity",
+            "AgentState",
+            "AngularAcceleration",
+            "LinearAcceleration",
+            "Quaternion",
+            "OccupancyMap",
+            "Heading",
+            "Speed"
+        ],
+        "Mapping": {
+            "ValidClassNames": [
+                "SWARMOccupancyMap"
+            ],
+            "ValidParameters": {
+                "SWARMOccupancyMap": {
+                    "Type": {
+                        "type": "str",
+                        "description": "The Type of Map to Display",
+                        "options": [
+                            "OccupancyMap"
+                        ]
+                    },
+                    "Center": {
+                        "type": "dict",
+                        "description": "The center position of the map in NED coordinates relative to the agent",
+                        "valid_fields": [
+                            "X",
+                            "Y",
+                            "Z"
+                        ],
+                        "field_data_type": "float",
+                        "field_range": [
+                            -99.0,
+                            99.0
+                        ]
+                    },
+                    "Size": {
+                        "type": "dict",
+                        "description": "The Size of the map from the origin to one edge of the map in meters",
+                        "valid_fields": [
+                            "X",
+                            "Y",
+                            "Z"
+                        ],
+                        "field_data_type": "int",
+                        "field_range": [
+                            0.0,
+                            500.0
+                        ]
+                    },
+                    "UpdateRate": {
+                        "type": "float",
+                        "description": "How often the map should update in seconds. Set to 0.0 if you only want to run it once",
+                        "range": [
+                            0.0,
+                            5.0
+                        ]
+                    },
+                    "ResolutionInMeters": {
+                        "type": "float",
+                        "description": "The resolution of the map (ie. the size of 1 grid square in the map) in meters",
+                        "range": [
+                            0.1,
+                            5.0
+                        ]
+                    }
+                }
+            },
+            "ValidInputArgs": {
+                "SWARMOccupancyMap": []
+            },
+            "ValidReturnValues": {
+                "SWARMOccupancyMap": [
+                    "OccupancyMap"
+                ]
+            }
+        },
         "HighLevelBehavior": {
             "ValidClassNames": [
                 "PathFollowing"
@@ -34,7 +123,9 @@
                 }
             },
             "ValidInputArgs": {
-                "PathFollowing": {}
+                "PathFollowing": [
+                    "Trajectory"
+                ]
             },
             "ValidReturnValues": {
                 "PathFollowing": [
@@ -44,21 +135,22 @@
                 ]
             }
         },
-        "PathPlanning": {
+        "LowLevelPathPlanning": {
             "ValidClassNames": [
                 "PassThroughPlanner",
                 "LinePlanner"
             ],
             "ValidParameters": {
-                "PassThroughPlanner": {
-                },
-                "LinePlanner": {
-
-                }
-            },
-            "ValidInputArgs": {
                 "PassThroughPlanner": {},
                 "LinePlanner": {}
+            },
+            "ValidInputArgs": {
+                "PassThroughPlanner": [
+                    "MovementCommand"
+                ],
+                "LinePlanner": [
+                    "MovementCommand"
+                ]
             },
             "ValidReturnValues": {
                 "PassThroughPlanner": [
@@ -69,20 +161,81 @@
                 ]
             }
         },
+        "HighLevelPathPlanning": {
+            "ValidClassNames": [
+                "AStar2D"
+            ],
+            "ValidParameters": {
+                "AStar2D": {
+                    "resolution": {
+                        "type": "float",
+                        "description": "The Resolution of the Voxel Grid map in meters",
+                        "range": [
+                            0.1,
+                            5.0
+                        ]
+                    },
+                    "goal_point": {
+                        "type": "list",
+                        "description": "The X and Y coordinates that are the goal in NED in meters",
+                        "length": 2,
+                        "field_data_type": "float",
+                        "field_range": [
+                            -999.0,
+                            999.0
+                        ]
+                    },
+                    "map_size": {
+                        "type": "list",
+                        "description": "The Resolution of the Voxel Grid map in meters",
+                        "length": 2,
+                        "field_data_type": "float",
+                        "field_range": [
+                            -999.0,
+                            999.0
+                        ]
+                    },
+                    "agent_radius": {
+                        "type": "float",
+                        "description": "The radius of the agent in meters",
+                        "range": [
+                            0.5,
+                            2.0
+                        ]
+                    },
+                    "flight_altitude": {
+                        "type": "float",
+                        "description": "The altitude to fly the agent at in meters in NED (so negative is up)",
+                        "range": [
+                            -0.5,
+                            -99.0
+                        ]
+                    }
+                }
+            },
+            "ValidInputArgs": {
+                "AStar2D": [
+                    "OccupancyMap"
+                ]
+            },
+            "ValidReturnValues": {
+                "AStar2D": [
+                    "Trajectory"
+                ]
+            }
+        },
         "VideoRecorder": {
             "ValidClassNames": [
                 "VideoRecorder"
             ],
             "ValidParameters": {
-                "VideoRecorder": {
-                }
-            },
-            "ValidInputArgs": {
                 "VideoRecorder": {}
             },
+            "ValidInputArgs": {
+                "VideoRecorder": []
+            },
             "ValidReturnValues": {
-                "VideoRecorder": [
-                ]
+                "VideoRecorder": []
             }
         },
         "Detector": {
@@ -90,15 +243,13 @@
                 "SWARMDetector"
             ],
             "ValidParameters": {
-                "SWARMDetector": {
-                }
+                "SWARMDetector": {}
             },
             "ValidInputArgs": {
                 "SWARMDetector": {}
             },
             "ValidReturnValues": {
-                "SWARMDetector": [
-                ]
+                "SWARMDetector": []
             }
         },
         "ObstacleAvoidance": {
@@ -106,10 +257,6 @@
                 "SlopeDetection"
             ],
             "ValidParameters": {
-                "SlopeDetection": {
-                }
-            },
-            "ValidInputArgs": {
                 "SlopeDetection": {
                     "min_slope": {
                         "type": "float",
@@ -128,6 +275,9 @@
                         ]
                     }
                 }
+            },
+            "ValidInputArgs": {
+                "SlopeDetection": []
             },
             "ValidReturnValues": {
                 "SlopeDetection": [

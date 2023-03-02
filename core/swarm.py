@@ -105,7 +105,11 @@ class SWARM():
             with open(settings_file_name, "r") as file:
                 settings = json.load(file)
 
-            self.display_map_image_with_trajectories(settings["Scenario"]["Options"]["LevelNames"], settings["Environment"]["Name"])
+            # We only use Trajectoris in DataCollection and other scenarios
+            if settings["Scenario"]["Name"] == "DataCollection":
+                self.display_map_image_with_trajectories(settings["Scenario"]["Options"]["LevelNames"], settings["Environment"]["Name"])
+            else:
+                self.display_map_image(settings["Scenario"]["Options"]["LevelNames"], settings["Environment"]["Name"])
 
     def read_map_name_from_settings(self, settings_file_name: str) -> str:
         """
@@ -173,6 +177,39 @@ class SWARM():
         plt.xlabel("X Coordinate (meters)")
         plt.ylabel('Y Coordinate (meters)')
         plt.show()
+
+    def display_map_image(self, level_names: list, env_name: str, maps_dir: str = "maps") -> None:
+        """
+        Display a Map Image of the Environment with no trajectory
+
+        ### Inputs:
+        - level_names [list] The levels to display
+        - env_name [str] The name of the environment to run
+        - maps_dir [str] The folder where the map system exists
+        """
+        for level_name in level_names:
+            metadata = self.load_map_metadata(level_name, env_name)
+            img = plt.imread("maps/{}_{}.png".format(env_name, level_name))
+            plt.imshow(img)
+            fig = plt.gcf()
+            
+            for ax in fig.axes:
+                # ax.axis('off')
+                # ax.margins(0,0)
+                # ax.xaxis.set_major_locator(plt.NullLocator())
+                # ax.yaxis.set_major_locator(plt.NullLocator())
+                # scale = 1.925
+                ticks_x = ticker.FuncFormatter(lambda x, pos: '{0:g}'.format(1*(x - metadata["Offset"][0]) / metadata["Scale"]))
+                ticks_y = ticker.FuncFormatter(lambda x, pos: '{0:g}'.format(1*(x - metadata["Offset"][1]) / metadata["Scale"]))
+                ax.xaxis.set_major_formatter(ticks_x)
+                ax.yaxis.set_major_formatter(ticks_y)
+            plt.plot(metadata["Offset"][0] + metadata["Origin"][0], metadata["Offset"][1] + metadata["Origin"][1], marker='.', color="white", label="Origin")
+            plt.plot(metadata["Offset"][0] + metadata["Origin"][0] + 7, metadata["Offset"][1] + metadata["Origin"][1], marker='>', color="blue", label="Origin")
+            plt.text(metadata["Offset"][0] + metadata["Origin"][0] - 10, metadata["Offset"][1] + metadata["Origin"][1] - 8, 'Origin', color='white' )
+            plt.text(metadata["Offset"][0] + metadata["Origin"][0] + 30, metadata["Offset"][1] + metadata["Origin"][1], 'Front', color='white' )
+            plt.xlabel("X Coordinate (meters)")
+            plt.ylabel('Y Coordinate (meters')
+            plt.show()
 
     def display_map_image_with_trajectories(self, level_names: list, env_name: str, maps_dir: str = "maps") -> None:
         """
@@ -565,6 +602,17 @@ class SWARM():
                             if not isinstance(options["Options"]["MultiLevel"], bool):
                                 raise AssertionError(
                                     "Error! The field MultiLevel must be a boolean value!")
+                        if "GoalPoint" in options["Options"]:
+                            if len(list(options["Options"]["GoalPoint"].keys())) != len(list(settings_file["Agents"].keys())):
+                                raise AssertionError("\n\nError!\nYou must have the same number of goal points as agents!\nYou defined {} agents and {} goal points".format(len(list(options["Options"]["GoalPoint"].keys())), len(list(settings_file["Agents"].keys()))))
+                            for agent_name, goal in options["Options"]["GoalPoint"].items():
+                                if type(goal).__name__ != "dict" or ["X", "Y", "Z"] != list(goal.keys()):
+                                    raise AssertionError("\n\nError for agent {}!\n You must define a dictonary with the keys 'X', 'Y' and 'Z' in NED coordaintes\n Your input was of type {}".format(agent_name, type(goal).__name__))
+                                for coord, coord_value in goal.items():
+                                    if type(coord_value).__name__ != "float":
+                                        raise AssertionError("\n\nError!\n Coordinate {} must be of type float\n Your input was of type {}".format(coord, type(coord_value).__name__))
+                                    if coord_value < -999.0 or coord_value > 999.0:
+                                        raise AssertionError("\n\nError!\n Coordinate {} must be between -999.0 and 999.0 meters!\n Your input was {}".format(coord, coord_value))
                     except AssertionError as error:
                         print(error)
                         return False
@@ -597,24 +645,24 @@ class SWARM():
                     valid_image_types = ["PNG"]
                     valid_video_types = ["MP4"]
                     try:
-                        for type in options.keys():
-                            if not type in valid_options:
+                        for data_type in options.keys():
+                            if not data_type in valid_options:
                                 raise AssertionError(
-                                    "Error! {} is not a valid type of data to collect".format(type))
-                            if type == "Images":
+                                    "Error! {} is not a valid type of data to collect".format(data_type))
+                            if data_type == "Images":
                                 if not options["Images"]["Format"] in valid_image_types:
                                     raise AssertionError(
-                                        "Error! {} is not a valid image format to save collected images".format(type))
-                                if not "ImagesPerSecond" in list(options[type].keys()):
+                                        "Error! {} is not a valid image format to save collected images".format(data_type))
+                                if not "ImagesPerSecond" in list(options[data_type].keys()):
                                     raise AssertionError(
                                         "\nError! You must include the parameter 'ImagesPerSecond' in the Images options!\n")
-                                if not isinstance(options[type]["ImagesPerSecond"], int):
+                                if not isinstance(options[data_type]["ImagesPerSecond"], int):
                                     raise AssertionError(
                                         "\nError! ImagesPerSecond must be a integer value!!\n")
-                                if options[type]["ImagesPerSecond"] > 20 or options[type]["ImagesPerSecond"] < 1 :
+                                if options[data_type]["ImagesPerSecond"] > 20 or options[data_type]["ImagesPerSecond"] < 1 :
                                     raise AssertionError(
                                         "\nError! ImagesPerSecond must be within the range of 1 to 20 images!\n")
-                            elif type == "Video":
+                            elif data_type == "Video":
                                 if "Format" not in options["Video"].keys():
                                     raise AssertionError(
                                         "Error! 'Format' is a required key in this section! Video Format options are {}".format(valid_video_types))
@@ -631,21 +679,21 @@ class SWARM():
                         return False
                 elif key == "Agents":
                     # Test that they have an agent
-                    try:
-                        numb_agents = len(list(options.keys()))
-                        if numb_agents < 1 or numb_agents > 1:
-                            raise AssertionError(
-                                "Error! Only 1 agent is supported at the moment! Please contact Codex Labs to request multi-agent support!")
-                    except Exception as error:
-                        print(error)
-                        # This is a critical error that should not allow them to continue
-                        return False
+                    # try:
+                    #     numb_agents = len(list(options.keys()))
+                    #     if numb_agents < 1 or numb_agents > 1:
+                    #         raise AssertionError(
+                    #             "Error! Only 1 agent is supported at the moment! Please contact Codex Labs to request multi-agent support!")
+                    # except Exception as error:
+                    #     print(error)
+                    #     # This is a critical error that should not allow them to continue
+                    #     return False
                     # Now, iterate through each agent and check that the modules are there
                     for agent, agent_options in options.items():
                         print("Validating {}".format(agent))
                         # Test that the appropriate sections exist
                         valid_agent_sections = [
-                            "Vehicle", "AutoPilot", "Sensors", "Controller", "SoftwareModules"]
+                            "Vehicle", "AutoPilot", "Sensors", "Controller", "SoftwareModules", "StartingPosition"]
                         valid_agent_sections.sort()
                         try:
                             user_agent_options = list(agent_options.keys())
@@ -661,10 +709,18 @@ class SWARM():
                                 if not section == "Multirotor":
                                     raise AssertionError(
                                         "Vehicle parameter must be Multirotor. Support for different vehicle types coming soon!")
+                            elif section_name == "StartingPosition":
+                                if "X" not in section.keys() or "Y" not in section.keys() or "Z" not in section.keys():
+                                    raise AssertionError("\n\n Error for Agent {}!\nYou must have X, Y and Z as keys to a dictionary for the StartingPosition!\nYour Input: {}".format(agent, section.keys()))
+                                for key, pos in section.items():
+                                    if type(pos).__name__ != "float":
+                                        raise AssertionError("\n\n Error for Agent {}!\n{} must be of type float!\nYour Input: {}".format(agent, pos))
+                                    if pos > 999.0 or pos < -999.0:
+                                        raise AssertionError("\n\n Error for Agent {}!\n{} must be of type within -999.0 and 999.0 meters!\nYour Input: {}".format(agent, pos))
                             elif section_name == "AutoPilot":
-                                if not section == "SWARM":
+                                if not section == "SWARM" and not section == "PX4":
                                     raise AssertionError(
-                                        "Autopilot parameter must be SWARM. Support for different autopilots, including PX4/Ardupilot coming in February 2023!")
+                                        "Autopilot parameter must be SWARM or PX4. Support for different autopilots, including PX4/Ardupilot coming in February 2023!")
                             elif section_name == "Sensors":
                                 valid_sensor_types = ["Cameras", "LiDARs"]
                                 for sensor_type, sensor_settings in section.items():
@@ -679,7 +735,7 @@ class SWARM():
                                                 raise AssertionError(
                                                     "You must have at least 1 camera in this section!")
                                             valid_camera_sections = [
-                                                "X", "Y", "Z", "Settings"]
+                                                "X", "Y", "Z", "Settings", "Roll", "Pitch", "Yaw"]
                                             valid_camera_sections.sort()
                                             sensor_settings_sections = list(
                                                 camera_options.keys())
@@ -693,9 +749,14 @@ class SWARM():
                                                     if not isinstance(sensor_setting, float) or (sensor_setting < -50.0 or sensor_setting > 50.0):
                                                         raise AssertionError(
                                                             "{} for {} is not a float value within -50.0 and 50.0".format(sensor_setting_key, agent))
+                                                if sensor_setting_key == "Yaw" or sensor_setting_key == "Pitch" or sensor_setting_key == "Roll":
+                                                    # TODO We need to define these bounds somewhere relative to the environment
+                                                    if not isinstance(sensor_setting, float) or (sensor_setting < -360.0 or sensor_setting > 360.0):
+                                                        raise AssertionError(
+                                                            "{} for {} is not a float value within -360.0 and 360.0 degrees!".format(sensor_setting_key, agent))
                                                 elif sensor_setting_key == "Settings":
                                                     valid_camera_setting_sections = [
-                                                        "Width", "Height"]
+                                                        "Width", "Height", "FOV_Degrees"]
                                                     user_camera_setting_sections = list(
                                                         sensor_setting.keys())
                                                     if (user_camera_setting_sections != valid_camera_setting_sections):
@@ -752,8 +813,15 @@ class SWARM():
             if module_name not in supported_modules.keys():
                 raise AssertionError("{} module for agent {} is not supported!\nValid modules are {}".format(
                     module_name, agent_name, supported_modules.keys()))
+            algo_level = settings["Algorithm"]["Level"]
+            if not isinstance(algo_level, int) or not (algo_level in [1, 2, 3]):
+                raise AssertionError("Level parameter for {} is invalid.\nValid options are {}\n Your Input: {}".format(
+                                module_name, [1, 2, 3], algo_level))
+            if algo_level == 3:
+                print("Processing Custom User Algorithm. Continuing...")
+                continue
             valid_class_names = supported_modules[module_name]["ValidClassNames"]
-            class_name = settings["ClassName"]
+            class_name = settings["Algorithm"]["ClassName"]
             if class_name not in valid_class_names:
                 raise AssertionError("Class name {} for {} is invalid.\nValid options are {}".format(
                     class_name, module_name, valid_class_names))
@@ -761,42 +829,65 @@ class SWARM():
                 if setting_name not in supported_modules["ValidModuleParameters"]:
                     raise AssertionError("Invalid module paramter in {}!\n Valid options are {}.".format(
                         module_name, supported_modules["ValidModuleParameters"]))
-                if setting_name == "Level":
-                    if not isinstance(setting, int) or not (setting in [1, 2, 3]):
-                        raise AssertionError("Level parameter for {} is invalid.\nValid options are {}".format(
-                            module_name, [1, 2, 3]))
-                elif setting_name == "States":
-                    pass
-                elif setting_name == "Parameters":
-                    valid_params = supported_modules[module_name]["ValidParameters"][class_name]
-                    for param_name, value in setting.items():
-                        if not param_name in valid_params.keys():
-                            raise AssertionError("Parameter {} for {} is invalid.\nValid options are {}\nYour Input: {}".format(
-                                param_name, module_name, valid_params[param_name], value))
-                        if not type(value).__name__ == valid_params[param_name]["type"]:
-                            raise AssertionError("Parameter {} for {} is an invalid type.\nValid options are {}\nYour Input: {}".format(
-                                param_name, module_name, valid_params[param_name]["type"], type(value).__name__))
-                        if (value < valid_params[param_name]["range"][0] or value > valid_params[param_name]["range"][1]):
-                            raise AssertionError("Parameter {} for {} is not in a valid range.\nValid options are {}\nYour Input: {}".format(
-                                param_name, module_name, valid_params[param_name]["range"], value))
-                elif setting_name == "InputArgs":
-                    valid_args = supported_modules[module_name]["ValidInputArgs"][class_name]
-                    for param_name, value in setting.items():
-                        if not param_name in valid_args.keys():
-                            raise AssertionError("Input Arg {} for {} is invalid.\nValid options are {}".format(
-                                param_name, module_name, valid_args))
-                        if not type(value).__name__ == valid_args[param_name]["type"]:
-                            raise AssertionError("Input Arg {} for {} is an invalid type.\nValid options are {}".format(
-                                param_name, module_name, valid_args[param_name]["type"]))
-                        if not value in valid_args[param_name]["range"]:
-                            raise AssertionError("Input Arg {} for {} is not in a valid range.\nValid options are {}".format(
-                                param_name, module_name, valid_args[param_name]["range"]))
-                elif setting_name == "ReturnValues":
-                    valid_return_values = supported_modules[module_name]["ValidReturnValues"][class_name]
-                    for return_value in setting:
-                        if not return_value in valid_return_values:
-                            raise AssertionError("Return Value {} for {} is invalid.\nValid options are {}\nYour Input: {}".format(
-                                return_value, module_name, valid_return_values, value))
+                if setting_name == "Algorithm":
+                    for algo_setting_name, algo_setting in setting.items():
+                        if algo_setting_name == "States":
+                            pass
+                        elif algo_setting_name == "Parameters":
+                            valid_params = supported_modules[module_name]["ValidParameters"][class_name]
+                            for param_name, value in algo_setting.items():
+                                if not param_name in valid_params.keys():
+                                    raise AssertionError("Parameter {} for {} is invalid.\nValid options are {}\nYour Input: {}".format(
+                                        param_name, module_name, valid_params[param_name], value))
+                                if not type(value).__name__ == valid_params[param_name]["type"]:
+                                    raise AssertionError("Parameter {} for {} is an invalid type.\nValid options are {}\nYour Input: {}".format(
+                                        param_name, module_name, valid_params[param_name]["type"], type(value).__name__))
+                                if type(value).__name__ == "list":
+                                    if len(value) != valid_params[param_name]["length"]:
+                                        raise AssertionError("Parameter {} for module {} has too many elements!.\nValid options are {}\nYour Input: {}".format(
+                                            param_name, module_name, valid_params[param_name]["length"], len(value)))
+                                    for item in value:
+                                        if not type(item).__name__ == valid_params[param_name]["field_data_type"]:
+                                            raise AssertionError("Key {} for Parameter {} for {} is an invalid type.\nValid options are {}\nYour Input: {}".format(
+                                                key, param_name, module_name, valid_params[param_name]["field_data_type"], type(value).__name__))
+                                        if type(item).__name__ == "float" or  type(item).__name__ == "int":
+                                            if (item < valid_params[param_name]["field_range"][0] or item > valid_params[param_name]["field_range"][1]):
+                                                raise AssertionError("Parameter {} for {} is not in a valid range.\nValid options are {}\nYour Input: {}".format(
+                                                    param_name, module_name, valid_params[param_name]["field_range"], value))
+                                if type(value).__name__ == "dict":
+                                    for key, item in value.items():
+                                        if key not in valid_params[param_name]["valid_fields"]:
+                                            raise AssertionError("Key {} for Parameter {} is an invalid.\nValid options are {}\nYour Input: {}".format(
+                                                key, param_name, module_name, valid_params[param_name]["valid_fields"], key))
+                                        if not type(item).__name__ == valid_params[param_name]["field_data_type"]:
+                                            raise AssertionError("Key {} for Parameter {} for {} is an invalid type.\nValid options are {}\nYour Input: {}".format(
+                                                key, param_name, module_name, valid_params[param_name]["field_data_type"], type(value).__name__))
+                                        if type(item).__name__ == "float" or  type(item).__name__ == "int":
+                                            if (item < valid_params[param_name]["field_range"][0] or item > valid_params[param_name]["field_range"][1]):
+                                                raise AssertionError("Parameter {} for {} is not in a valid range.\nValid options are {}\nYour Input: {}".format(
+                                                    param_name, module_name, valid_params[param_name]["field_range"], value))
+                                if type(value).__name__ == "float" or type(value).__name__ == "int":
+                                    if (value < valid_params[param_name]["range"][0] or value > valid_params[param_name]["range"][1]):
+                                        raise AssertionError("Parameter {} for {} is not in a valid range.\nValid options are {}\nYour Input: {}".format(
+                                            param_name, module_name, valid_params[param_name]["range"], value))
+                        elif algo_setting_name == "InputArgs":
+                            print(algo_setting, algo_setting_name)
+                            valid_args = supported_modules[module_name]["ValidInputArgs"][class_name]
+                            for value in algo_setting:
+                                if not value in valid_args:
+                                    raise AssertionError("Input Arg {} for {} is invalid.\nValid options are {}".format(
+                                        value, module_name, valid_args))
+                        elif algo_setting_name == "ReturnValues":
+                            valid_return_values = supported_modules[module_name]["ValidReturnValues"][class_name]
+                            for return_value in algo_setting:
+                                if not return_value in valid_return_values:
+                                    raise AssertionError("Return Value {} for {} is invalid.\nValid options are {}\nYour Input: {}".format(
+                                        return_value, module_name, valid_return_values, value))
+                if setting_name == "Publishes" or setting_name == "Subscribes":
+                    valid_messages = supported_modules["ValidMessageTypes"]
+                    for message in setting:
+                        if message not in valid_messages:
+                            raise AssertionError("\nError!\nInvalid message to publish of type {}\nSupported Messages are {}\n".format(message, valid_messages))
 
         return True
 
@@ -815,6 +906,7 @@ class SWARM():
         # is basically the same system.
 
         # Always access the Trajectory via Trajectory, especially for Core
+        trajectory_valid = True
         trajectory = trajectory["Trajectory"]
         if isinstance(trajectory, list):
             trajectory_valid = self.validate_trajectory_file(trajectory)
@@ -823,6 +915,8 @@ class SWARM():
             for level in trajectory.keys():
                 trajectory_valid = self.validate_trajectory_file(
                     trajectory[level])
+                if not trajectory_valid:
+                    break
 
         return trajectory_valid
 
@@ -911,6 +1005,9 @@ class SWARM():
             traceback.print_exc()
             return False
 
+    
+
+
     # =========================================================================
     #                       Core Message Functions
     # =========================================================================
@@ -941,21 +1038,26 @@ class SWARM():
             settings, trajectory = self.retrieve_sim_package(
                 sim_name, folder=folder)
             settings_valid = self.validate_settings_file(json.loads(settings))
-            trajectory_valid = self.validate_multi_level_trajectory_file(
-                json.loads(trajectory))
             if not settings_valid:
                 print(
                     "Simulation Run Failed.\nReason: Settings file invalid! Please see the settings folder!")
                 exit(1)
-            if not trajectory_valid:
-                print(
-                    "Simulation Run Failed.\nReason: Trajectory file invalid! Please see the settings folder!")
-                exit(1)
+            
+            user_settings = json.loads(settings)
+            if user_settings["Scenario"]["Name"] == "DataCollection":
+                trajectory_valid = self.validate_multi_level_trajectory_file(
+                    json.loads(trajectory))
+                
+                if not trajectory_valid:
+                    print(
+                        "Simulation Run Failed.\nReason: Trajectory file invalid! Please see the settings folder!")
+                    exit(1)
             self.client.connect()
             message = {
                 "Command": "Run Simulation",
                 "Settings": settings,
                 "Trajectory": trajectory,
+                "UserCode": self.client.load_user_code(json.loads(settings)),
                 "Sim_name": sim_name,
                 "Map_name": map_name
             }
@@ -1175,6 +1277,31 @@ class SWARM():
                 return False
             else:
                 return True
+        except AssertionError:
+            print("Simulation could not be completed!")
+            return False
+        except Exception:
+            traceback.print_exc()
+
+
+    def validate_user_code(self, settings_file: str = "settings/DefaultSimulationSettings.json") -> None:
+        """
+        Given a settings file, determine if any custom code has been
+        indicated by the User and validate said code if that is
+        the case.
+        """
+        try:
+            with open(settings_file, "r") as file:
+                settings = json.load(file)
+            
+            custom_code = False
+            for agent_name, agent_info in settings["Agents"].items():
+                for module_name, module in agent_info["SoftwareModules"].items():
+                    if module["Algorithm"]["Level"] == 3:
+                        custom_code = True
+            print("DEBUG Code is custom: {}".format(custom_code))
+            if custom_code:
+                completed = self.client.send_user_code_for_validation({}, settings)
         except AssertionError:
             print("Simulation could not be completed!")
             return False

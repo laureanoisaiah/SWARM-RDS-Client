@@ -28,7 +28,10 @@ sim_manager.setup_simulation(args.map_name)
 
 new_simulation = sim_manager.build_simulation(SIMULATION_NAME)
 
-sim_manager.run_simulation(args.map_name, SIMULATION_NAME)
+try:
+    sim_manager.run_simulation(args.map_name, SIMULATION_NAME)
+except KeyboardInterrupt:
+    pass
 
 answer = input("Would you like to download data? (y/n)")
 if answer == "y":
