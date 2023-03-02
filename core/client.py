@@ -15,12 +15,13 @@ import machineid
 from tqdm import tqdm
 
 from threading import Thread, Event
+from json import JSONDecodeError
 
 from core.validator import activate_license
 
 # from utils.constants import ENCODING_SCHEME
 ENCODING_SCHEME = "utf-8"
-BUFFER_SIZE = 8192
+BUFFER_SIZE = 4096
 
 
 class SWARMClient(Thread):
@@ -46,6 +47,8 @@ class SWARMClient(Thread):
         self.debug = debug
         self.license_key = ""
         self.license_activated = False
+        # Save the last response provided
+        self.last_response = dict()
         self.machine_id = machineid.hashed_id('swarm-dev')
         self.load_license_key()
         self.activate_user_license()
@@ -221,15 +224,24 @@ class SWARMClient(Thread):
                     response_completed = True
                     self.message_map[str(message_id)]["Completed"] = True
                 else:
-                    print(message["Body"]["Status"])
+                    received_header = False
+                    received_bytes = b''
+                    total_bytes = 0
+                    if "Status" in message['Body'].keys():
+                        print(message["Body"]["Status"])
+                    if "ValidationResults" in message["Body"].keys():
+                        print("User Code has been Validated")
+                        for agent, feedback in message["Body"]["ValidationResults"].items():
+                            print("Code Feedback for {}".format(agent))
+                            for module_name, statement in feedback.items():
+                                print("\n\nModule: {} \n\n".format(module_name))
+                                print(statement)
                     if "Error" in message["Body"].keys():
                         error = message["Body"]["Error"]
                         if error == "Critical":
                             print("ERROR! {}".format(error))
                             assert AssertionError("Received a critical error!")
-                    received_header = False
-                    received_bytes = b''
-                    total_bytes = 0
+                    
                     # assert ValueError("Unknown message id!")
             except BlockingIOError:
                 # Ensure this thread does not cause the computer
@@ -237,9 +249,16 @@ class SWARMClient(Thread):
                 time.sleep(0.001)
             except AssertionError:
                 break
+            except KeyboardInterrupt:
+                self.socket.close()
+                break
+            except JSONDecodeError:
+                self.socket.close()
+                break
             except Exception:
-                pass
-                # traceback.print_exc()
+                if message:
+                    print(message)
+                traceback.print_exc()
 
         if received_message == None:
             assert ValueError("We did not receive a message in the response")
@@ -313,7 +332,7 @@ class SWARMClient(Thread):
                     bar.update(len(new_bytes))
 
                 except BlockingIOError:
-                    print("Blocking IO Error!")
+                    pass
                 except Exception:
                     traceback.print_exc()
 
@@ -322,6 +341,56 @@ class SWARMClient(Thread):
 
         recv_data = b''.join(recv_bytes)
         return recv_data
+
+    def load_user_code(self, settings: dict) -> str:
+        """
+        Load and prepare the User Code for sending. This entails reading
+        the Python files, encoding them to JSON strings and providing
+        that information to the message.
+
+        ### Inputs:
+        - settings [dict] The User defined settings of the Agents
+        """
+        user_code = dict()
+
+        for agent_name, agent_info in settings["Agents"].items():
+            user_code[agent_name] = dict()
+            for module_name, module in agent_info["SoftwareModules"].items():
+                isCustomModule, isCustomAlgo = self.query_supported_module_list(module_name, module["Algorithm"]["ClassName"])
+                if isCustomAlgo:
+                    with open("user_code/{}/{}.py".format(agent_name,  module["Algorithm"]["ClassName"]), "r") as file:
+                        user_code[agent_name][module_name] = {"Code": json.dumps(file.read()), "AlgorithmName":  module["Algorithm"]["ClassName"]}
+                elif isCustomModule:
+                    with open("user_code/{}/{}.py".format(agent_name, module_name), "r") as file:
+                        user_code[agent_name][module_name] = {"Code": json.dumps(file.read()), "AlgorithmName": module["Algorithm"]["ClassName"]}
+        
+        return user_code
+
+    def query_supported_module_list(self, module_name: str, class_name: str) -> bool:
+        """
+        Check in the Supported Module List if the the code should be
+        uploaded to the SWARM Server.
+
+        ### Inputs:
+        - module_name [str] The name of the module to load
+        - class_name [str] The name of the algorithm to load
+        """
+        print("Querying Supported List")
+        print(module_name, class_name)
+        with open("core/SupportedSoftwareModules.json", "r") as file:
+            supported_modules = json.load(file)["SupportedModules"]
+
+        # If the User is defining a new module that we don't know the
+        # name of.
+        if module_name not in supported_modules["ValidModuleNames"]:
+            return True, True
+
+        # Get the module options of a SWARM Module
+        module_options = supported_modules[module_name]
+        if class_name not in module_options["ValidClassNames"]:
+            return False, True
+        
+        return False, False
 
     def send_simulation_execution_package(self,
                                           json_file: dict) -> dict:
@@ -513,6 +582,44 @@ class SWARMClient(Thread):
         except Exception:
             traceback.print_exc()
             return False
+
+    def send_user_code_for_validation(self, message: dict, settings: dict) -> bool:
+        """
+        Send the User's Code for Validation. This should be run before
+        each Simulation that contains custom User code, which will
+        be auto-detected by the Code Validation system.
+        """
+        try:
+            message_packet = dict(ID=self.message_id, Type="Single", Body=None)
+            message["LicenseKey"] = self.retrieve_license_key()
+            message["MachineID"] = self.machine_id
+            message["Settings"] = json.dumps(settings)
+            message["UserCode"] = self.load_user_code(settings=settings)
+            message_packet["Body"] = message
+            self.message_map[str(self.message_id)] = {
+                "Completed": False,
+                "ID": self.message_id
+            }
+            json_str = json.dumps(message_packet).encode(ENCODING_SCHEME)
+            sent = self.send_message(json_str)
+            # wait for the message that says we are going to get the
+            # message
+            # self.wait_for_response_packet(self.message_id)
+            # TODO We should wait for message receipt with a timeout.
+            response = self.wait_for_response_packet(self.message_id)
+            self.last_response = response
+            print("Validation Results:\n")
+            print(response["Body"]["ValidationResults"])
+            # Only increment to the next message id if we know the last message
+            # was sent.
+            if sent:
+                self.message_id += 1
+            self.connected = False
+            return True
+        except Exception:
+            traceback.print_exc()
+            return False
+
 
 if __name__ == "__main__":
     client = SWARMClient("test")

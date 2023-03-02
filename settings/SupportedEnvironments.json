@@ -6,6 +6,11 @@
                 "Home2",
                 "Home3"
             ]
+        },
+        "Blocks": {
+            "Levels": [
+                "Level1"
+            ]
         }
     }
 }

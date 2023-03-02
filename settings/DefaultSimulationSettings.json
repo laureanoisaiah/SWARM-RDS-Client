@@ -71,14 +71,6 @@
                     "ReturnValues": [
                         "MovementCommand"
                     ]
-                },
-                "VideoRecorder": {
-                    "Level": 1,
-                    "States": [],
-                    "Parameters": {},
-                    "ClassName": "VideoRecorder",
-                    "InputArgs": {},
-                    "ReturnValues": []
                 }
             }
         }
