@@ -1,28 +1,36 @@
 {
     "ID": 0,
     "SimulationName": "example",
-    "RunLength": 120.0,
+    "RunLength": 140.0,
     "Scenario": {
-        "Name": "DataCollection",
+        "Name": "Navigation",
         "Options": {
-            "MultiLevel": true,
+            "MultiLevel": false,
             "LevelNames": [
-                "Home1"
-            ]
+                "Level1"
+            ],
+            "GoalPoint": {
+                "Drone1": {
+                    "X": 40.0,
+                    "Y": 30.0,
+                    "Z": -3.0
+                },
+                "Drone2": {
+                    "X": -25.0,
+                    "Y": 0.0,
+                    "Z": -3.0
+                }
+            }
         }
     },
     "Environment": {
-        "Name": "SWARMHome",
-        "StartingLevelName": "Home1",
+        "Name": "Blocks",
+        "StartingLevelName": "Level1",
         "StreamVideo": true
     },
     "Data": {
         "VehicleState": {
             "Format": "SWARM"
-        },
-        "Video": {
-            "Format": "MP4",
-            "VideoName": "DemoVideo"
         }
     },
     "Agents": {
@@ -49,7 +57,7 @@
             "Controller": {
                 "Name": "SWARMBase",
                 "Gains": {
-                    "P": 0.45,
+                    "P": 0.6,
                     "I": 0.0,
                     "D": 0.05
                 }
@@ -60,35 +68,81 @@
                 "Z": 0.0
             },
             "SoftwareModules": {
-                "HighLevelBehavior": {
+                "Mapping": {
                     "Algorithm": {
-                        "Level": 1,
-                        "States": [],
                         "Parameters": {
-                            "completed_waypoint_distance": 2.0
+                            "Type": "OccupancyMap",
+                            "Center": {
+                                "X": 0.0,
+                                "Y": 0.0,
+                                "Z": 0.0
+                            },
+                            "Size": {
+                                "X": 100,
+                                "Y": 100,
+                                "Z": 20
+                            },
+                            "UpdateRate": 0.0,
+                            "ResolutionInMeters": 1.0
                         },
-                        "ClassName": "PathFollowing",
+                        "ClassName": "SWARMOccupancyMap",
+                        "Level": 1,
                         "InputArgs": [],
                         "ReturnValues": [
-                            "Position",
-                            "Heading",
-                            "Speed"
+                            "OccupancyMap"
                         ]
                     },
                     "Publishes": [
-                        "MovementCommand"
+                        "OccupancyMap"
+                    ],
+                    "Subscribes": []
+                },
+                "HighLevelPathPlanning": {
+                    "Algorithm": {
+                        "Level": 3,
+                        "States": [],
+                        "Parameters": {
+                            "goal_point": [
+                                40.0,
+                                30.0
+                            ],
+                            "map_size": [
+                                100.0,
+                                100.0
+                            ],
+                            "starting_point": [
+                                0.0,
+                                0.0
+                            ],
+                            "resolution": 1.0,
+                            "agent_radius": 1.5,
+                            "flight_altitude": -3.0
+                        },
+                        "InputArgs": [
+                            "OccupancyMap"
+                        ],
+                        "ClassName": "AStar",
+                        "ReturnValues": [
+                            "Trajectory"
+                        ]
+                    },
+                    "Publishes": [
+                        "Trajectory"
                     ],
                     "Subscribes": [
+                        "OccupancyMap",
                         "AgentState"
                     ]
                 },
-                "PathPlanning": {
+                "LowLevelPathPlanning": {
                     "Algorithm": {
                         "Level": 1,
                         "States": [],
                         "Parameters": {},
+                        "InputArgs": [
+                            "MovementCommand"
+                        ],
                         "ClassName": "PassThroughPlanner",
-                        "InputArgs": [],
                         "ReturnValues": [
                             "MovementCommand"
                         ]
@@ -96,7 +150,128 @@
                     "Publishes": [],
                     "Subscribes": [
                         "AgentState",
-                        "MovementCommand"
+                        "Trajectory"
+                    ]
+                }
+            }
+        },
+        "Drone2": {
+            "Vehicle": "Multirotor",
+            "AutoPilot": "SWARM",
+            "Sensors": {
+                "Cameras": {
+                    "Camera1": {
+                        "X": 0.35,
+                        "Y": 0.0,
+                        "Z": 0.0,
+                        "Roll": 0.0,
+                        "Pitch": 0.0,
+                        "Yaw": 0.0,
+                        "Settings": {
+                            "Width": 640,
+                            "Height": 480,
+                            "FOV_Degrees": 90
+                        }
+                    }
+                }
+            },
+            "Controller": {
+                "Name": "SWARMBase",
+                "Gains": {
+                    "P": 0.6,
+                    "I": 0.0,
+                    "D": 0.05
+                }
+            },
+            "StartingPosition": {
+                "X": -2.0,
+                "Y": 2.0,
+                "Z": 0.0
+            },
+            "SoftwareModules": {
+                "Mapping": {
+                    "Algorithm": {
+                        "Parameters": {
+                            "Type": "OccupancyMap",
+                            "Center": {
+                                "X": 0.0,
+                                "Y": 0.0,
+                                "Z": 0.0
+                            },
+                            "Size": {
+                                "X": 100,
+                                "Y": 100,
+                                "Z": 20
+                            },
+                            "UpdateRate": 0.0,
+                            "ResolutionInMeters": 1.0
+                        },
+                        "ClassName": "SWARMOccupancyMap",
+                        "Level": 1,
+                        "InputArgs": [],
+                        "ReturnValues": [
+                            "OccupancyMap"
+                        ]
+                    },
+                    "Publishes": [
+                        "OccupancyMap"
+                    ],
+                    "Subscribes": []
+                },
+                "HighLevelPathPlanning": {
+                    "Algorithm": {
+                        "Level": 3,
+                        "States": [],
+                        "Parameters": {
+                            "goal_point": [
+                                -25.0,
+                                0.0
+                            ],
+                            "map_size": [
+                                100.0,
+                                100.0
+                            ],
+                            "starting_point": [
+                                0.0,
+                                0.0
+                            ],
+                            "resolution": 1.0,
+                            "agent_radius": 1.5,
+                            "flight_altitude": -4.0
+                        },
+                        "InputArgs": [
+                            "OccupancyMap"
+                        ],
+                        "ClassName": "AStar",
+                        "ReturnValues": [
+                            "Trajectory"
+                        ]
+                    },
+                    "Publishes": [
+                        "Trajectory"
+                    ],
+                    "Subscribes": [
+                        "OccupancyMap",
+                        "AgentState"
+                    ]
+                },
+                "LowLevelPathPlanning": {
+                    "Algorithm": {
+                        "Level": 1,
+                        "States": [],
+                        "Parameters": {},
+                        "InputArgs": [
+                            "MovementCommand"
+                        ],
+                        "ClassName": "PassThroughPlanner",
+                        "ReturnValues": [
+                            "MovementCommand"
+                        ]
+                    },
+                    "Publishes": [],
+                    "Subscribes": [
+                        "AgentState",
+                        "Trajectory"
                     ]
                 }
             }
