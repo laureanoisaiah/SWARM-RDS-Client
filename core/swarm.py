@@ -615,9 +615,17 @@ class SWARM():
                                     raise AssertionError(
                                         "\nError! ImagesPerSecond must be within the range of 1 to 20 images!\n")
                             elif type == "Video":
+                                if "Format" not in options["Video"].keys():
+                                    raise AssertionError(
+                                        "Error! 'Format' is a required key in this section! Video Format options are {}".format(valid_video_types))
+                                if "VideoName" not in options["Video"].keys():
+                                    raise AssertionError(
+                                        "\nError! 'VideoName' is a required key in this section!\nThis must be a string!\n\n")
                                 if not options["Video"]["Format"] in valid_video_types:
                                     raise AssertionError(
-                                        "Error! {} is not a valid video form to save collected collected".format(type))
+                                        "Error! {} is not a valid video format!".format(options["Video"]["Format"]))
+                                if not isinstance(options["Video"]["VideoName"], str):
+                                    raise AssertionError("Error! Video name must be a string! \n")
                     except AssertionError as error:
                         print(error)
                         return False

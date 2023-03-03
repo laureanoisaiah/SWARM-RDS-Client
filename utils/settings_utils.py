@@ -101,8 +101,8 @@ def check_if_path_planning_added(modules: dict) -> bool:
     ### Inputs:
     - modules [dict] The SoftwareModules loaded for Agent i
     """
-    if "PathPlanning" not in modules.keys():
-        print("Error! You must include a PathPlanning module. Please select that now!")
+    if "LowLevelPathPlanning" not in modules.keys():
+        print("Error! You must include a LowLevelPathPlanning module. Please select that now!")
         return False
 
     return True
@@ -295,7 +295,7 @@ def generate_new_user_settings_file(debug: bool = False) -> dict:
         print("Now, we will configure your flight stack!")
         print("Each software module is a piece of code that will run onboard.\n")
         print("================ NOTE ==========================")
-        print("You must have a PathPlanning module implemented!")
+        print("You must have a LowLevelPathPlanning module implemented!")
         print("================================================")
         modules_finished = False
         valid_modules = retrieve_supported_software_modules()

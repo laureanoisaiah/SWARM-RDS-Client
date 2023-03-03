@@ -1,7 +1,7 @@
 {
     "ID": 0,
     "SimulationName": "example",
-    "RunLength": 30.0,
+    "RunLength": 120.0,
     "Scenario": {
         "Name": "DataCollection",
         "Options": {
@@ -20,9 +20,9 @@
         "VehicleState": {
             "Format": "SWARM"
         },
-        "Images": {
-            "Format": "PNG",
-            "ImagesPerSecond": 5
+        "Video": {
+            "Format": "MP4",
+            "VideoName": "DemoVideo"
         }
     },
     "Agents": {
@@ -71,14 +71,6 @@
                     "ReturnValues": [
                         "MovementCommand"
                     ]
-                },
-                "VideoRecorder": {
-                    "Level": 1,
-                    "States": [],
-                    "Parameters": {},
-                    "ClassName": "VideoRecorder",
-                    "InputArgs": {},
-                    "ReturnValues": []
                 }
             }
         }
