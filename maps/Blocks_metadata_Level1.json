@@ -1,0 +1,8 @@
+{
+    "Origin": [0.0, 0.0, 0.0],
+    "Offset": [175.0, 175.0, 0.0],
+    "CaptureSize": [200,200,20],
+    "ImageSize": [374, 374],
+    "CaptureIncrement": 1.0,
+    "Scale": 2.2
+}

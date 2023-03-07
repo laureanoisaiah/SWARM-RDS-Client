@@ -1,4 +1,4 @@
-tqdm
-matplotlib
-py-machineid
-requests
+tqdm>=4.64.0
+matplotlib>=3.6
+py-machineid>=0.2
+requests>=2.28
