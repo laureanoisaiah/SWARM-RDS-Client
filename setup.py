@@ -14,7 +14,7 @@ except ImportError:
     from distutils.core import setup
 
 setup(name='swarm-sim-firmware',
-      version="1.0.0",
+      version="1.2.0",
       author='Codex Laboratories LLC',
       author_email='tylerfedrizzi@codex-labs-llc.com',
       url="https://codexlabsllc.github.io/SWARMSimFirmware",
