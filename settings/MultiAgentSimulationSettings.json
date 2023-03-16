@@ -136,6 +136,9 @@
                             "MovementCommand"
                         ]
                     },
+                    "Parameters": {
+                        "completed_waypoint_distance": 0.25
+                    },
                     "Publishes": [],
                     "Subscribes": [
                         "AgentState",
@@ -159,7 +162,8 @@
                         "Settings": {
                             "Width": 640,
                             "Height": 480,
-                            "FOV_Degrees": 90
+                            "FOV_Degrees": 90.0,
+                            "FramesPerSecond": 24.0
                         }
                     }
                 }
@@ -175,7 +179,10 @@
             "StartingPosition": {
                 "X": -2.0,
                 "Y": 2.0,
-                "Z": 0.0
+                "Z": 0.0,
+                "Roll": 0.0,
+                "Pitch": 0.0,
+                "Yaw": 0.0
             },
             "SoftwareModules": {
                 "Mapping": {
@@ -252,6 +259,9 @@
                         "ReturnValues": [
                             "MovementCommand"
                         ]
+                    },
+                    "Parameters": {
+                        "completed_waypoint_distance": 0.25
                     },
                     "Publishes": [],
                     "Subscribes": [

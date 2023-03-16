@@ -1,7 +1,7 @@
 {
     "ID": 0,
     "SimulationName": "example",
-    "RunLength": 120.0,
+    "RunLength": 105.0,
     "Scenario": {
         "Name": "DataCollection",
         "Options": {
@@ -22,14 +22,36 @@
         },
         "Video": {
             "Format": "MP4",
-            "VideoName": "DemoVideo"
+            "VideoName": "TestVideo"
         }
     },
     "Agents": {
         "Drone1": {
             "Vehicle": "Multirotor",
-            "AutoPilot": "SWARM",
+            "VehicleOptions": {},
+            "AutoPilot": "PX4",
             "Sensors": {
+                "Barometers": {
+                    "Barometer": {
+                        "Enabled": true,
+                        "Method": "AirSim",
+                        "PublishingRate": 10.0
+                    }
+                },
+                "IMU": {
+                    "Imu": {
+                        "Enabled": true,
+                        "Method": "AirSim",
+                        "PublishingRate": 100.0
+                    }
+                },
+                "Magnetometers": {
+                    "Magnetometer": {
+                        "Enabled": true,
+                        "Method": "AirSim",
+                        "PublishingRate": 10.0
+                    }
+                },
                 "Cameras": {
                     "Camera1": {
                         "X": 0.35,
@@ -41,7 +63,8 @@
                         "Settings": {
                             "Width": 640,
                             "Height": 480,
-                            "FOV_Degrees": 90
+                            "FOV_Degrees": 90.0,
+                            "FramesPerSecond": 24.0
                         }
                     }
                 }
@@ -57,7 +80,10 @@
             "StartingPosition": {
                 "X": 0.0,
                 "Y": 0.0,
-                "Z": 0.0
+                "Z": -1.0,
+                "Roll": 0.0,
+                "Pitch": 0.0,
+                "Yaw": 0.0
             },
             "SoftwareModules": {
                 "HighLevelBehavior": {
@@ -65,10 +91,12 @@
                         "Level": 1,
                         "States": [],
                         "Parameters": {
-                            "completed_waypoint_distance": 2.0
+                            "completed_waypoint_distance": 1.5
                         },
+                        "InputArgs": [
+                            "Trajectory"
+                        ],
                         "ClassName": "PathFollowing",
-                        "InputArgs": [],
                         "ReturnValues": [
                             "Position",
                             "Heading",
@@ -87,15 +115,20 @@
                         "Level": 1,
                         "States": [],
                         "Parameters": {},
+                        "InputArgs": [
+                            "MovementCommand"
+                        ],
                         "ClassName": "PassThroughPlanner",
-                        "InputArgs": [],
                         "ReturnValues": [
                             "MovementCommand"
                         ]
                     },
+                    "Parameters": {
+                        "completed_waypoint_distance": 1.5,
+                        "TakeoffAltitude": 5.0
+                    },
                     "Publishes": [],
                     "Subscribes": [
-                        "AgentState",
                         "MovementCommand"
                     ]
                 }

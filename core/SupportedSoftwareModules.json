@@ -6,7 +6,8 @@
             "States",
             "Algorithm",
             "Publishes",
-            "Subscribes"
+            "Subscribes",
+            "Parameters"
         ],
         "ValidAlgorithmParameters": [
             "Parameters",
@@ -159,6 +160,24 @@
                 "LinePlanner": [
                     "MovementCommand"
                 ]
+            },
+            "ValidModuleParameters":{
+                "completed_waypoint_distance": {
+                    "type": "float",
+                    "description": "The distance in meters to deem a waypoint 'completed'",
+                    "range": [
+                        0.1,
+                        5.0
+                    ]
+                },
+                "TakeoffAltitude": {
+                    "type": "float",
+                    "description": "The distance above the ground in meters to takeoff",
+                    "range": [
+                        0.1,
+                        5.0
+                    ]
+                }
             }
         },
         "HighLevelPathPlanning": {

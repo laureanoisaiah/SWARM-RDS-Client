@@ -11,6 +11,11 @@
             "Levels": [
                 "Level1"
             ]
+        },
+        "MountainVillage": {
+            "Levels": [
+                "Level1"
+            ]
         }
     }
 }
