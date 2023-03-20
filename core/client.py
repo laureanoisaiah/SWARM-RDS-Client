@@ -342,7 +342,7 @@ class SWARMClient(Thread):
         recv_data = b''.join(recv_bytes)
         return recv_data
 
-    def load_user_code(self, settings: dict) -> str:
+    def load_user_code(self, settings: dict, path: str = ".") -> str:
         """
         Load and prepare the User Code for sending. This entails reading
         the Python files, encoding them to JSON strings and providing
@@ -358,10 +358,10 @@ class SWARMClient(Thread):
             for module_name, module in agent_info["SoftwareModules"].items():
                 isCustomModule, isCustomAlgo = self.query_supported_module_list(module_name, module["Algorithm"]["ClassName"])
                 if isCustomAlgo:
-                    with open("user_code/{}/{}.py".format(agent_name,  module["Algorithm"]["ClassName"]), "r") as file:
+                    with open("{}/user_code/{}/{}.py".format(path, agent_name,  module["Algorithm"]["ClassName"]), "r") as file:
                         user_code[agent_name][module_name] = {"Code": json.dumps(file.read()), "AlgorithmName":  module["Algorithm"]["ClassName"]}
                 elif isCustomModule:
-                    with open("user_code/{}/{}.py".format(agent_name, module_name), "r") as file:
+                    with open("{}/user_code/{}/{}.py".format(path, agent_name, module_name), "r") as file:
                         user_code[agent_name][module_name] = {"Code": json.dumps(file.read()), "AlgorithmName": module["Algorithm"]["ClassName"]}
         
         return user_code

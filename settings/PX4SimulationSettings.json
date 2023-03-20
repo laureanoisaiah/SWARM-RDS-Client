@@ -1,19 +1,19 @@
 {
     "ID": 0,
     "SimulationName": "example",
-    "RunLength": 105.0,
+    "RunLength": 55.0,
     "Scenario": {
         "Name": "DataCollection",
         "Options": {
             "MultiLevel": false,
             "LevelNames": [
-                "Level1"
+                "Home1"
             ]
         }
     },
     "Environment": {
-        "Name": "Blocks",
-        "StartingLevelName": "Level1",
+        "Name": "SWARMHome",
+        "StartingLevelName": "Home1",
         "StreamVideo": true
     },
     "Data": {
@@ -28,32 +28,70 @@
     "Agents": {
         "Drone1": {
             "Vehicle": "Multirotor",
-            "VehicleOptions": {},
-            "AutoPilot": "PX4",
+            "VehicleOptions": {
+                "UseLocalPX4": true,
+                "RunROSNode": true,
+                "PlanningCoordinateSystem": "NED"
+            },
+            "AutoPilot": "SWARM",
             "Sensors": {
+                "LiDAR": {
+                    "LidarSensor1": {
+                        "Hardware": "VelodynePuck",
+                        "Method": "Colosseum",
+                        "Enabled": true,
+                        "X": 0.35,
+                        "Y": 0.0,
+                        "Z": 0.0,
+                        "Roll": 0.0,
+                        "Pitch": 0.0,
+                        "Yaw": 0.0,
+                        "PublishingRate": 20.0,
+                        "Settings": {
+
+                        }
+                    }
+                },
                 "Barometers": {
                     "Barometer": {
                         "Enabled": true,
-                        "Method": "AirSim",
-                        "PublishingRate": 10.0
+                        "Method": "Colosseum",
+                        "PublishingRate": 5.0
                     }
                 },
                 "IMU": {
-                    "Imu": {
+                    "Imu1": {
                         "Enabled": true,
-                        "Method": "AirSim",
+                        "Method": "Colosseum",
                         "PublishingRate": 100.0
+                    }
+                },
+                "GPS": {
+                    "Gps1": {
+                        "Enabled": true,
+                        "Method": "Colosseum",
+                        "PublishingRate": 10.0
                     }
                 },
                 "Magnetometers": {
                     "Magnetometer": {
                         "Enabled": true,
-                        "Method": "AirSim",
+                        "Method": "Colosseum",
                         "PublishingRate": 10.0
                     }
                 },
-                "Cameras": {
-                    "Camera1": {
+                "Odometers": {
+                    "Odometer1": {
+                        "Enabled": true,
+                        "Method": "Colosseum",
+                        "PublishingRate": 25.0
+                    }
+                },
+                "Distance": {
+                    "Distance1": {
+                        "Hardware": "Velodyne",
+                        "Method": "Colosseum",
+                        "Enabled": true,
                         "X": 0.35,
                         "Y": 0.0,
                         "Z": 0.0,
@@ -61,6 +99,21 @@
                         "Pitch": 0.0,
                         "Yaw": 0.0,
                         "Settings": {
+                            "MaxRange": 40.0
+                        }
+                    }
+                },
+                "Cameras": {
+                    "Camera1": {
+                        "Enabled": true,
+                        "X": 0.35,
+                        "Y": 0.0,
+                        "Z": 0.0,
+                        "Roll": 0.0,
+                        "Pitch": 0.0,
+                        "Yaw": 0.0,
+                        "Settings": {
+                            "ImageType": "Scene",
                             "Width": 640,
                             "Height": 480,
                             "FOV_Degrees": 90.0,
@@ -72,8 +125,8 @@
             "Controller": {
                 "Name": "SWARMBase",
                 "Gains": {
-                    "P": 0.45,
-                    "I": 0.0,
+                    "P": 0.95,
+                    "I": 0.02,
                     "D": 0.05
                 }
             },
@@ -123,13 +176,11 @@
                             "MovementCommand"
                         ]
                     },
-                    "Parameters": {
-                        "completed_waypoint_distance": 1.5,
-                        "TakeoffAltitude": 5.0
-                    },
+                    "Parameters": {},
                     "Publishes": [],
                     "Subscribes": [
-                        "MovementCommand"
+                        "MovementCommand",
+                        "AgentState"
                     ]
                 }
             }

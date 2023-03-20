@@ -139,15 +139,39 @@
         "LowLevelPathPlanning": {
             "ValidClassNames": [
                 "PassThroughPlanner",
+                "PassThroughTrajectoryPlanner",
+                "MinSnapTrajectoryPlanner",
                 "LinePlanner"
             ],
             "ValidParameters": {
                 "PassThroughPlanner": {},
-                "LinePlanner": {}
+                "PassThroughTrajectoryPlanner": {},
+                "LinePlanner": {},
+                "MinSnapTrajectoryPlanner": {
+                    "default_speed": {
+                        "type": "float",
+                        "description": "[m/s] The default speed the trajectory should be planned for in meters per second",
+                        "range": [
+                            0.5,
+                            10.0
+                        ]
+                    },
+                    "setpoint_type": {
+                        "type": "str",
+                        "description": "[m/s] The default speed the trajectory should be planned for in meters per second",
+                        "valid_entries": ["position", "velocity", "angular_rate"]
+                    }
+                }
             },
             "ValidInputArgs": {
                 "PassThroughPlanner": [
                     "MovementCommand"
+                ],
+                "MinSnapTrajectoryPlanner": [
+                    "Trajectory"
+                ],
+                "PassThroughTrajectoryPlanner": [
+                    "Trajectory"
                 ],
                 "LinePlanner": [
                     "MovementCommand"
@@ -159,6 +183,12 @@
                 ],
                 "LinePlanner": [
                     "MovementCommand"
+                ],
+                "MinSnapTrajectoryPlanner": [
+                    "Trajectory"
+                ],
+                "PassThroughTrajectoryPlanner": [
+                    "Trajectory"
                 ]
             },
             "ValidModuleParameters":{
