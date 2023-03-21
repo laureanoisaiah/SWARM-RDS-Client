@@ -7,6 +7,13 @@
 # Description: Core Execution of the forward-facing gui
 # =============================================================================
 import argparse
+import os
+import sys
+
+
+# Taken from https://docs.python-guide.org/writing/structure/
+# Add the root folder to our path to access SWARM
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from core.swarm import SWARM
 
@@ -21,7 +28,7 @@ argpaser.add_argument("--ip-address", default="127.0.0.1", help='The remote IP a
 
 args = argpaser.parse_args()
 
-sim_manager = SWARM(ip_address=args.ip_address)
+sim_manager = SWARM(ip_address=args.ip_address, folder="../")
 
 sim_manager.setup_simulation(args.map_name)
 

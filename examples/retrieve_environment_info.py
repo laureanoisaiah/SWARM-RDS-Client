@@ -7,6 +7,12 @@
 # Description: An example of retreiving the environment information
 #              from the SWARM Core System
 # =============================================================================
+import os
+import sys
+
+# Taken from https://docs.python-guide.org/writing/structure/
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from core.swarm import SWARM
 
 # Replace this with your provided access key!
