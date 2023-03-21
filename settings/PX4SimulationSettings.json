@@ -31,9 +31,9 @@
             "VehicleOptions": {
                 "UseLocalPX4": true,
                 "RunROSNode": true,
-                "PlanningCoordinateSystem": "NED"
+                "PlanningCoordinateFrame": "NED"
             },
-            "AutoPilot": "SWARM",
+            "AutoPilot": "PX4",
             "Sensors": {
                 "LiDAR": {
                     "LidarSensor1": {
@@ -139,50 +139,7 @@
                 "Yaw": 0.0
             },
             "SoftwareModules": {
-                "HighLevelBehavior": {
-                    "Algorithm": {
-                        "Level": 1,
-                        "States": [],
-                        "Parameters": {
-                            "completed_waypoint_distance": 1.5
-                        },
-                        "InputArgs": [
-                            "Trajectory"
-                        ],
-                        "ClassName": "PathFollowing",
-                        "ReturnValues": [
-                            "Position",
-                            "Heading",
-                            "Speed"
-                        ]
-                    },
-                    "Publishes": [
-                        "MovementCommand"
-                    ],
-                    "Subscribes": [
-                        "AgentState"
-                    ]
-                },
-                "LowLevelPathPlanning": {
-                    "Algorithm": {
-                        "Level": 1,
-                        "States": [],
-                        "Parameters": {},
-                        "InputArgs": [
-                            "MovementCommand"
-                        ],
-                        "ClassName": "PassThroughPlanner",
-                        "ReturnValues": [
-                            "MovementCommand"
-                        ]
-                    },
-                    "Parameters": {},
-                    "Publishes": [],
-                    "Subscribes": [
-                        "MovementCommand",
-                        "AgentState"
-                    ]
-                }
+                
             }
         }
     }
