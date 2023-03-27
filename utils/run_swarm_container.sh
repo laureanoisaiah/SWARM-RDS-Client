@@ -5,12 +5,12 @@
 # offline validation of License Keys, which is mounted into the container
 # at runtime.
 
-if [ -d ".cache" ]:
+if [ -d .cache ]
 then
     echo "Directory .cache exists."
 else
     echo "Creating .cache directory"
-    $_mkdir -p ".cache"
+    mkdir .cache
 fi
 
-docker run -it --rm --gpus=all --runtime=nvidia --network=host -v $pwd.cache:/home/airsim_user/SWARMCore/core/.cache $1
+docker run -it --rm --gpus=all --runtime=nvidia --network=host -v $pwd/.cache:/home/airsim_user/SWARMCore/core/.cache $1
