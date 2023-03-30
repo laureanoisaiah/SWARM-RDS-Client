@@ -8,3 +8,21 @@
 # =============================================================================
 # Encoding scheme for sending bytes
 ENCODING_SCHEME = 'utf-8'
+
+CAMERA_SETTINGS_DEFAULTS = {
+    "PublishPose": False,
+    "Enabled": False,
+    "X": 0.0,
+    "Y": 0.0,
+    "Z": 0.0,
+    "Yaw": 0.0,
+    "Pitch": 0.0,
+    "Roll": 0.0,
+    "Settings": {
+        "ImageType": "Scene",
+        "Width": 640,
+        "Height": 480,
+        "FramesPerSecond": 24.0,
+        "FOV_Degrees": 90.0
+    }
+}
