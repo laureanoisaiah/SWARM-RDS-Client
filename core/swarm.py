@@ -843,17 +843,192 @@ class SWARM():
                                                                         camera_name, agent, camera_setting_key, type(camera_setting).__name__))
 
                                     elif sensor_type == "Barometers":
-                                        pass
+                                        for baro_name, baro_options in sensor_settings.items():
+                                            print("Validating Barometer {}".format(
+                                                baro_name))
+                                            if len(section["Barometers"].keys()) < 1:
+                                                raise AssertionError(
+                                                    "You must have at least 1 Barometer in this section!")
+                                            valid_baro_sections = [
+                                                "Enabled", "Method", "PublishingRate"]
+                                            valid_baro_sections.sort()
+                                            sensor_settings_sections = list(
+                                                baro_options.keys())
+                                            sensor_settings_sections.sort()
+                                            if sensor_settings_sections != valid_baro_sections:
+                                                raise AssertionError("Error!\n\nBarometer Sensor {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
+                                                    baro_name, sensor_settings_sections, valid_baro_sections))
+                                            for sensor_setting_key, sensor_setting in baro_options.items():
+                                                if sensor_setting_key == "Method":
+                                                    if not isinstance(sensor_setting, str) or sensor_setting not in ["Colosseum"]:
+                                                        raise AssertionError("Error!\n\nBarometer {} parameter Method was invalid! The method must be a string\nValid options are: Colosseum")
+                                                if sensor_setting_key == "Eabled":
+                                                    if not isinstance(sensor_setting, bool):
+                                                        raise AssertionError("Error!\n\nBarometer {} parameter Enabled was invalid! The method must be a boolean value!")
+                                                if sensor_setting_key == "PublishingRate":
+                                                    self.validate_publishing_Rate("Barometer", baro_name, sensor_setting, 1.0, 20.0)
+                                    elif sensor_type == "Odometers":
+                                        for odom_name, odom_options in sensor_settings.items():
+                                            print("Validating Odometer {}".format(
+                                                odom_name))
+                                            if len(section["Odometers"].keys()) < 1:
+                                                raise AssertionError(
+                                                    "You must have at least 1 Odometer in this section!")
+                                            valid_odom_sections = [
+                                                "Enabled", "Method", "PublishingRate"]
+                                            valid_odom_sections.sort()
+                                            sensor_settings_sections = list(
+                                                odom_options.keys())
+                                            sensor_settings_sections.sort()
+                                            if sensor_settings_sections != valid_odom_sections:
+                                                raise AssertionError("Error!\n\nOdometer Sensor {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
+                                                    odom_name, sensor_settings_sections, valid_odom_sections))
+                                            for sensor_setting_key, sensor_setting in odom_options.items():
+                                                if sensor_setting_key == "Method":
+                                                    if not isinstance(sensor_setting, str) or sensor_setting not in ["Colosseum"]:
+                                                        raise AssertionError("Error!\n\nOdometer {} parameter Method was invalid! The method must be a string\nValid options are: Colosseum")
+                                                if sensor_setting_key == "Eabled":
+                                                    if not isinstance(sensor_setting, bool):
+                                                        raise AssertionError("Error!\n\nOdometer {} parameter Enabled was invalid! The method must be a boolean value!")
+                                                if sensor_setting_key == "PublishingRate":
+                                                    self.validate_publishing_Rate("Odometer", baro_name, sensor_setting, 1.0, 50.0)
                                     elif sensor_type == "Magnetometers":
-                                        pass
+                                        for mag_name, mag_options in sensor_settings.items():
+                                            print("Validating Magnetometer {}".format(
+                                                mag_name))
+                                            if len(section["Magnetometers"].keys()) < 1:
+                                                raise AssertionError(
+                                                    "You must have at least 1 Magnetometer in this section!")
+                                            valid_mag_sections = [
+                                                "Enabled", "Method", "PublishingRate"]
+                                            valid_mag_sections.sort()
+                                            sensor_settings_sections = list(
+                                                mag_options.keys())
+                                            sensor_settings_sections.sort()
+                                            if sensor_settings_sections != valid_mag_sections:
+                                                raise AssertionError("Error!\n\nMagnetometer Sensor {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
+                                                    mag_name, sensor_settings_sections, valid_mag_sections))
+                                            for sensor_setting_key, sensor_setting in mag_options.items():
+                                                if sensor_setting_key == "Method":
+                                                    if not isinstance(sensor_setting, str) or sensor_setting not in ["Colosseum"]:
+                                                        raise AssertionError("Error!\n\nMagnetometer {} parameter Method was invalid! The method must be a string\nValid options are: Colosseum")
+                                                if sensor_setting_key == "Eabled":
+                                                    if not isinstance(sensor_setting, bool):
+                                                        raise AssertionError("Error!\n\nMagnetometer {} parameter Enabled was invalid! The method must be a boolean value!")
+                                                if sensor_setting_key == "PublishingRate":
+                                                    self.validate_publishing_Rate("Magnetometer", mag_name, sensor_setting, 1.0, 20.0)
                                     elif sensor_type == "GPS":
-                                        pass
+                                        for gps_name, gps_options in sensor_settings.items():
+                                            print("Validating GPS {}".format(
+                                                gps_name))
+                                            if len(section["GPS"].keys()) < 1:
+                                                raise AssertionError(
+                                                    "You must have at least 1 GPS in this section!")
+                                            valid_gps_sections = [
+                                                "Enabled", "Method", "PublishingRate"]
+                                            valid_gps_sections.sort()
+                                            sensor_settings_sections = list(
+                                                gps_options.keys())
+                                            sensor_settings_sections.sort()
+                                            if sensor_settings_sections != valid_gps_sections:
+                                                raise AssertionError("Error!\n\nGPS Sensor {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
+                                                    gps_name, sensor_settings_sections, valid_gps_sections))
+                                            for sensor_setting_key, sensor_setting in gps_options.items():
+                                                if sensor_setting_key == "Method":
+                                                    if not isinstance(sensor_setting, str) or sensor_setting not in ["Colosseum"]:
+                                                        raise AssertionError("Error!\n\nGPS {} parameter Method was invalid! The method must be a string\nValid options are: Colosseum")
+                                                if sensor_setting_key == "Eabled":
+                                                    if not isinstance(sensor_setting, bool):
+                                                        raise AssertionError("Error!\n\nGPS {} parameter Enabled was invalid! The method must be a boolean value!")
+                                                if sensor_setting_key == "PublishingRate":
+                                                    self.validate_publishing_Rate("GPS", gps_name, sensor_setting, 1.0, 20.0)
                                     elif sensor_type == "AirSpeed":
-                                        pass
+                                        for airspeed_name, airspeed_options in sensor_settings.items():
+                                            print("Validating AirSpeed {}".format(
+                                                airspeed_name))
+                                            if len(section["AirSpeed"].keys()) < 1:
+                                                raise AssertionError(
+                                                    "You must have at least 1 AirSpeed in this section!")
+                                            valid_airspeed_sections = [
+                                                "Enabled", "Method", "PublishingRate"]
+                                            valid_airspeed_sections.sort()
+                                            sensor_settings_sections = list(
+                                                airspeed_options.keys())
+                                            sensor_settings_sections.sort()
+                                            if sensor_settings_sections != valid_airspeed_sections:
+                                                raise AssertionError("Error!\n\nAirSpeed Sensor {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
+                                                    airspeed_name, sensor_settings_sections, valid_airspeed_sections))
+                                            for sensor_setting_key, sensor_setting in airspeed_options.items():
+                                                if sensor_setting_key == "Method":
+                                                    if not isinstance(sensor_setting, str) or sensor_setting not in ["Colosseum"]:
+                                                        raise AssertionError("Error!\n\nAirSpeed {} parameter Method was invalid! The method must be a string\nValid options are: Colosseum")
+                                                if sensor_setting_key == "Eabled":
+                                                    if not isinstance(sensor_setting, bool):
+                                                        raise AssertionError("Error!\n\nAirSpeed {} parameter Enabled was invalid! The method must be a boolean value!")
+                                                if sensor_setting_key == "PublishingRate":
+                                                    self.validate_publishing_Rate("AirSpeed", airspeed_name, sensor_setting, 1.0, 20.0)
                                     elif sensor_type == "Distance":
-                                        pass
+                                        for dist_name, dist_options in sensor_settings.items():
+                                            print("Validating Distance Sensor {}".format(
+                                                dist_name))
+                                            if len(section["Distance"].keys()) < 1:
+                                                raise AssertionError(
+                                                    "You must have at least 1 Distance Sensor in this section!")
+                                            valid_dist_sections = [
+                                                "Enabled", "Method", "X", "Y", "Z", "Roll", "Pitch", "Yaw", "PublishingRate", "MinDistance", "MaxDistance"]
+                                            valid_dist_sections.sort()
+                                            sensor_settings_sections = list(
+                                                dist_options.keys())
+                                            sensor_settings_sections.sort()
+                                            if sensor_settings_sections != valid_dist_sections:
+                                                raise AssertionError("Error!\n\nDistance Sensor {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
+                                                    dist_name, sensor_settings_sections, valid_dist_sections))
+                                            for sensor_setting_key, sensor_setting in dist_options.items():
+                                                if sensor_setting_key == "X" or sensor_setting_key == "Y" or sensor_setting_key == "Z":
+                                                    # TODO We need to define these bounds somewhere relative to the environment
+                                                    if not isinstance(sensor_setting, float) or (sensor_setting < -50.0 or sensor_setting > 50.0):
+                                                        raise AssertionError(
+                                                            "{} for {} is not a float value within -50.0 and 50.0".format(sensor_setting_key, agent))
+                                                if sensor_setting_key == "Yaw" or sensor_setting_key == "Pitch" or sensor_setting_key == "Roll":
+                                                    # TODO We need to define these bounds somewhere relative to the environment
+                                                    if not isinstance(sensor_setting, float) or (sensor_setting < -360.0 or sensor_setting > 360.0):
+                                                        raise AssertionError(
+                                                            "{} for {} is not a float value within -360.0 and 360.0 degrees!".format(sensor_setting_key, agent))
+                                                if sensor_setting_key == "MinDistance":
+                                                    if not isinstance(sensor_setting, float) or (sensor_setting < 0.2 or sensor_setting >= dist_options["MaxDistance"]):
+                                                        raise AssertionError(
+                                                            "Error!\n\n{} for {} is not a float value within 0.2 and {} meters".format(sensor_setting_key, agent, dist_options["MaxDistance"]))
+                                                if sensor_setting_key == "MaxDistance":
+                                                    if not isinstance(sensor_setting, float) or (sensor_setting > 1000.0 or sensor_setting <= dist_options["MinDistance"]):
+                                                        raise AssertionError(
+                                                            "Error!\n\n{} for {} is not a float value within {} and 1000.0 meters".format(sensor_setting_key, agent, dist_options["MinDistance"]))
+                                                if sensor_setting_key == "PublishingRate":
+                                                    self.validate_publishing_Rate("Distance Sesnor", dist_name, sensor_setting, 1.0, 20.0)
                                     elif sensor_type == "IMU":
-                                        pass
+                                        for imu_name, imu_options in sensor_settings.items():
+                                            print("Validating IMU {}".format(
+                                                imu_name))
+                                            if len(section["IMU"].keys()) < 1:
+                                                raise AssertionError(
+                                                    "You must have at least 1 IMU in this section!")
+                                            valid_imu_sections = [
+                                                "Enabled", "Method", "PublishingRate"]
+                                            valid_imu_sections.sort()
+                                            sensor_settings_sections = list(
+                                                imu_options.keys())
+                                            sensor_settings_sections.sort()
+                                            if sensor_settings_sections != valid_imu_sections:
+                                                raise AssertionError("Error!\n\nIMU Sensor {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
+                                                    imu_name, sensor_settings_sections, valid_imu_sections))
+                                            for sensor_setting_key, sensor_setting in imu_options.items():
+                                                if sensor_setting_key == "Method":
+                                                    if not isinstance(sensor_setting, str) or sensor_setting not in ["Colosseum"]:
+                                                        raise AssertionError("Error!\n\nIMU {} parameter Method was invalid! The method must be a string\nValid options are: Colosseum")
+                                                if sensor_setting_key == "Eabled":
+                                                    if not isinstance(sensor_setting, bool):
+                                                        raise AssertionError("Error!\n\nIMU {} parameter Enabled was invalid! The method must be a boolean value!")
+                                                if sensor_setting_key == "PublishingRate":
+                                                    self.validate_publishing_Rate("IMU", imu_name, sensor_setting, 1.0, 150.0)
                                     elif sensor_type == "LiDAR":
                                         for lidar_name, lidar_options in sensor_settings.items():
                                             print("Validating lidar {}".format(
@@ -881,6 +1056,8 @@ class SWARM():
                                                     if not isinstance(sensor_setting, float) or (sensor_setting < -360.0 or sensor_setting > 360.0):
                                                         raise AssertionError(
                                                             "{} for {} is not a float value within -360.0 and 360.0 degrees!".format(sensor_setting_key, agent))
+                                                if sensor_setting_key == "PublishingRate":
+                                                    self.validate_publishing_Rate("LiDAR", lidar_name, sensor_setting, 1.0, 30.0)
                                                 elif sensor_setting_key == "Settings":
                                                     valid_lidar_setting_sections = [
                                                         "Range", "NumberOfChannels", "RotationsPerSecond", "PointsPerSecond", "VerticalFOVUpper", "VerticalFOVLower", "HorizontalFOVStart", "HorizontalFOVEnd", "DataFrame"]
@@ -949,6 +1126,22 @@ class SWARM():
         except Exception as error:
             print(error)
             return False
+
+    def validate_publishing_Rate(self,
+                                 sensor_type: str,
+                                 sensor_name: str,
+                                 sensor_setting: float,
+                                 min: float,
+                                 max: float) -> None:
+        """
+        Validate the publishing rate paratmeter to ensure it is a float
+        within the specified range.
+        """
+        if not isinstance(sensor_setting, float):
+            raise AssertionError("Error!\n\n{} {} parameter Publishing Rate was invalid! The Rate must be a float value between {} and {}!\n Your Input Type: {}".format(sensor_type, sensor_name, max, min, type(sensor_setting).__name__))
+
+        if sensor_setting > max or sensor_setting < min:
+            raise AssertionError("Error!\n\n{} {} parameter Publishing Rate was invalid! The Rate must be a float value between {} and {}!\n Your Input: {}".format(sensor_type, sensor_name, max, min, sensor_setting))
 
     def validate_software_modules(self, modules: dict, agent_name: str) -> bool:
         """
