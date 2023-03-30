@@ -20,6 +20,7 @@ from uuid import uuid4
 from core.client import SWARMClient
 from utils.date_utils import convert_datetime_to_str
 from utils.settings_utils import receive_user_input, generate_new_user_settings_file
+from utils.constants import CAMERA_SETTINGS_DEFAULTS
 
 
 class SWARM():
@@ -778,13 +779,18 @@ class SWARM():
                                                 raise AssertionError(
                                                     "You must have at least 1 camera in this section!")
                                             valid_camera_sections = [
-                                                "X", "Y", "Z", "Settings", "Roll", "Pitch", "Yaw"]
+                                                "Enabled", "PublishPose", "X", "Y", "Z", "Settings", "Roll", "Pitch", "Yaw"]
                                             valid_camera_sections.sort()
                                             sensor_settings_sections = list(
                                                 camera_options.keys())
                                             sensor_settings_sections.sort()
                                             if sensor_settings_sections != valid_camera_sections:
-                                                raise AssertionError("{} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
+                                                # print("Warning! Default sections for camera {} are being set! Your Sections: {}\nRequired Sections: {}".format(camera_name, sensor_settings_sections, valid_camera_sections))
+                                                # diff_fields = [def_option for def_option, user_option in zip(valid_camera_sections, sensor_settings_sections) if (def_option not in user_option)]
+                                                # for field in diff_fields:
+                                                #     settings_file["Agents"][agent]["Sensors"]["Cameras"][camera_name][field] = CAMERA_SETTINGS_DEFAULTS[field]
+                                                # camera_options = settings_file["Agents"][agent]["Sensors"]["Cameras"][camera_name]
+                                                raise AssertionError("Error!\n{} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
                                                     camera_name, sensor_settings_sections, valid_camera_sections))
                                             for sensor_setting_key, sensor_setting in camera_options.items():
                                                 if sensor_setting_key == "X" or sensor_setting_key == "Y" or sensor_setting_key == "Z":
@@ -802,6 +808,8 @@ class SWARM():
                                                         "ImageType", "Width", "Height", "FOV_Degrees", "FramesPerSecond"]
                                                     user_camera_setting_sections = list(
                                                         sensor_setting.keys())
+                                                    valid_camera_setting_sections.sort()
+                                                    user_camera_setting_sections.sort()
                                                     if (user_camera_setting_sections != valid_camera_setting_sections):
                                                         raise AssertionError("Camera {} for agent {} settings are invalid.\nYour sensor settings section: {}\nValid sensor setting section: {}".format(
                                                             camera_name, agent, user_camera_setting_sections, valid_camera_setting_sections))
@@ -830,7 +838,7 @@ class SWARM():
                                                             if not isinstance(camera_setting, str):
                                                                 raise AssertionError("Camera {} for agent {} {} parameter must be of type String!\nYour input: {}".format(
                                                                         camera_name, agent, camera_setting_key, type(camera_setting).__name__))
-                                                            if camera_setting not in ["Scene", "Depth"]:
+                                                            if camera_setting not in ["Scene", "Segmentation", "Depth"]:
                                                                 raise AssertionError("Camera {} for agent {} {} parameter is not valid. Must be either Scene or Depth!\nYour input: {}".format(
                                                                         camera_name, agent, camera_setting_key, type(camera_setting).__name__))
 
@@ -938,8 +946,8 @@ class SWARM():
                                 self.validate_software_modules(section, agent)
                 print("Section {} is valid!".format(key))
             return True
-        except Exception:
-            traceback.print_exc()
+        except Exception as error:
+            print(error)
             return False
 
     def validate_software_modules(self, modules: dict, agent_name: str) -> bool:

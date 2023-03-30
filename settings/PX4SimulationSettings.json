@@ -1,19 +1,19 @@
 {
     "ID": 0,
     "SimulationName": "example",
-    "RunLength": 55.0,
+    "RunLength": 900.0,
     "Scenario": {
-        "Name": "DataCollection",
+        "Name": "FreePlay",
         "Options": {
             "MultiLevel": false,
             "LevelNames": [
-                "Home1"
+                "Level1"
             ]
         }
     },
     "Environment": {
         "Name": "SWARMHome",
-        "StartingLevelName": "Home1",
+        "StartingLevelName": "Level1",
         "StreamVideo": true
     },
     "Data": {
@@ -31,7 +31,7 @@
             "VehicleOptions": {
                 "UseLocalPX4": true,
                 "RunROSNode": true,
-                "PlanningCoordinateFrame": "NED"
+                "PlanningCoordinateFrame": "ENU"
             },
             "AutoPilot": "PX4",
             "Sensors": {
@@ -47,9 +47,7 @@
                         "Pitch": 0.0,
                         "Yaw": 0.0,
                         "PublishingRate": 20.0,
-                        "Settings": {
-
-                        }
+                        "Settings": {}
                     }
                 },
                 "Barometers": {
@@ -90,6 +88,7 @@
                 "Cameras": {
                     "Camera1": {
                         "Enabled": true,
+                        "PublishPose": false,
                         "X": 0.35,
                         "Y": 0.0,
                         "Z": 0.0,
@@ -117,14 +116,12 @@
             "StartingPosition": {
                 "X": 0.0,
                 "Y": 0.0,
-                "Z": -1.0,
+                "Z": -0.1,
                 "Roll": 0.0,
                 "Pitch": 0.0,
                 "Yaw": 0.0
             },
-            "SoftwareModules": {
-                
-            }
+            "SoftwareModules": {}
         }
     }
 }
