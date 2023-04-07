@@ -14,7 +14,12 @@
     "Environment": {
         "Name": "SWARMHome",
         "StartingLevelName": "Home1",
-        "StreamVideo": true
+        "StreamVideo": true,
+        "Options": {
+            "Doors": "Open",
+            "Lights": "Off",
+            "FurnitureRandomization": "On"
+        }
     },
     "Data": {
         "VehicleState": {
@@ -22,15 +27,14 @@
         },
         "Video": {
             "Format": "MP4",
-            "VideoName": "TestVideo"
+            "VideoName": "TestVideo",
+            "CameraName": "Camera1"
         }
     },
     "Agents": {
         "Drone1": {
             "Vehicle": "Multirotor",
             "VehicleOptions": {
-                "RunROSNode": true,
-                "PlanningCoordinateFrame": "NED"
             },
             "AutoPilot": "SWARM",
             "Sensors": {
@@ -76,7 +80,7 @@
                         "Level": 1,
                         "States": [],
                         "Parameters": {
-                            "completed_waypoint_distance": 1.5
+                            "completed_waypoint_distance": 1.0
                         },
                         "InputArgs": [
                             "Trajectory"

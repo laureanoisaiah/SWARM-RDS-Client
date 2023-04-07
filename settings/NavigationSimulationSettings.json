@@ -77,30 +77,6 @@
                 "Yaw": 0.0
             },
             "SoftwareModules": {
-                "ObstacleAvoidance": {
-                    "Algorithm": {
-                        "Level": 3,
-                        "States": [],
-                        "Parameters": {
-                            "goal_point": [20.0, 30.0]
-                        },
-                        "InputArgs": [
-                            
-                        ],
-                        "ClassName": "OAAlgo",
-                        "ReturnValues": [
-                            "Position",
-                            "Heading",
-                            "Speed"
-                        ]
-                    },
-                    "Publishes": [
-                        "MovementCommand"
-                    ],
-                    "Subscribes": [
-                        "AgentState"
-                    ]
-                },
                 "LowLevelPathPlanning": {
                     "Algorithm": {
                         "Level": 1,

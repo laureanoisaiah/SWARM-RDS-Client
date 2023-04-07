@@ -5,17 +5,39 @@
                 "Home1",
                 "Home2",
                 "Home3"
-            ]
+            ],
+            "StartingLevel": "Home1",
+            "Options": {
+                "Doors": {
+                    "ValidOptions": ["Open", "Closed"],
+                    "Description": "Select the starting position of all doors in the environment",
+                    "DefaultValue": "Closed"
+                },
+                "Lights": {
+                    "ValidOptions": ["On", "Off"],
+                    "Description": "Select the starting status for the all lights (lamps, ceiling lights, etc.)",
+                    "DefaultValue": "Off"
+                },
+                "FurnitureRandomization": {
+                    "ValidOptions": ["On", "Off"],
+                    "Description": "Select whether the furniture should be randomized on every iteration of a simulation",
+                    "DefaultValue": "On"
+                }
+            }
         },
         "Blocks": {
             "Levels": [
                 "Level1"
-            ]
+            ],
+            "StartingLevel": "Level1",
+            "Options": {}
         },
         "MountainVillage": {
             "Levels": [
                 "Level1"
-            ]
+            ],
+            "StartingLevel": "Level1",
+            "Options": {}
         }
     }
 }

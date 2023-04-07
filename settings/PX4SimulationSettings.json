@@ -7,22 +7,23 @@
         "Options": {
             "MultiLevel": false,
             "LevelNames": [
-                "Level1"
+                "Home1"
             ]
         }
     },
     "Environment": {
         "Name": "SWARMHome",
-        "StartingLevelName": "Level1",
-        "StreamVideo": true
+        "StartingLevelName": "Home1",
+        "StreamVideo": true,
+        "Options": {
+            "Doors": "Open",
+            "Lights": "Off",
+            "FurnitureRandomization": "On"
+        }
     },
     "Data": {
         "VehicleState": {
             "Format": "SWARM"
-        },
-        "Video": {
-            "Format": "MP4",
-            "VideoName": "TestVideo"
         }
     },
     "Agents": {

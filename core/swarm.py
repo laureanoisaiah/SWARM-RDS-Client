@@ -51,6 +51,28 @@ class SWARM():
     #                       Helper Functions
     # =========================================================================
 
+    def _get_supported_environments(self, working_path: str = os.getcwd()) -> dict:
+        """
+        Get the SupportedEnvironments.json file that exists in the
+        settings folder. This describes all valid options.
+
+        ### Inputs:
+        - None
+
+        ### Returns:
+        - A dictonary containing the supported environments.
+        """
+        try:
+            with open("{}/settings/SupportedEnvironments.json".format(working_path), "r") as file:
+                return json.load(file)
+        except FileNotFoundError:
+            raise AssertionError(
+                "Error!\n" +
+                "The file titled SupportedEnvironments.json was not found in the settings folder\n" +
+                "If you do not see this file, please run example in the examples folder titled 'retrieve_environment_info.py\n" +
+                "which will download this file from the server to provide the most up to date information."
+            )
+
     def setup_simulation(self,
                          map_name: str = None,
                          settings_file_name: str = "settings/DefaultSimulationSettings.json") -> None:
@@ -632,7 +654,7 @@ class SWARM():
                         print(error)
                         return False
                 elif key == "Environment":
-                    valid_keys = ['Name', 'StreamVideo', 'StartingLevelName']
+                    valid_keys = ['Name', 'StreamVideo', 'StartingLevelName', 'Options']
                     try:
                         if not "Name" in list(options.keys()):
                             raise AssertionError(
@@ -652,6 +674,7 @@ class SWARM():
                         if not self.validate_level_is_supported(options["Name"], options['StartingLevelName']):
                             raise AssertionError(
                                 "Level selected is not supported by this environment")
+                        self.validate_environment_options(options)
                     except AssertionError as error:
                         print(error)
                         return False
@@ -684,12 +707,27 @@ class SWARM():
                                 if "VideoName" not in options["Video"].keys():
                                     raise AssertionError(
                                         "\nError! 'VideoName' is a required key in this section!\nThis must be a string!\n\n")
+                                if "CameraName" not in options["Video"].keys():
+                                    raise AssertionError(
+                                        "\nError! 'CameraName' is a required key in this section!\nThis must be a string!\n\n")
                                 if not options["Video"]["Format"] in valid_video_types:
                                     raise AssertionError(
                                         "Error! {} is not a valid video format!".format(options["Video"]["Format"]))
                                 if not isinstance(options["Video"]["VideoName"], str):
                                     raise AssertionError(
                                         "Error! Video name must be a string! \n")
+                                if not isinstance(options["Video"]["CameraName"], str):
+                                    raise AssertionError(
+                                        "Error!\n\n Data Options error!\n Camera name must be a string! \n")
+                                camera_names = list()
+                                for agent_name, agent_options in settings_file["Agents"].items():
+                                    if "Cameras" not in agent_options["Sensors"].keys():
+                                        raise AssertionError("Error!\n\nYou must add a Cameras section to your settings to record video!")
+                                    for camera_name in agent_options["Sensors"]["Cameras"].keys():
+                                        if camera_name not in camera_names:
+                                            camera_names.append(camera_name)
+                                if options["Video"]["CameraName"] not in camera_names:
+                                    raise AssertionError("Error!\n\nNo Agent in your settings has a camera with name: {}\nPlease correct this by adding a Camera with that name!!".format(options["Video"]["CameraName"]))
                     except AssertionError as error:
                         print(error)
                         return False
@@ -1120,10 +1158,11 @@ class SWARM():
                                                 raise AssertionError(
                                                     "Gain {} for controller for {} must be between 0.0 and 20.0!".format(gain_key, agent))
                             elif section_name == "SoftwareModules":
-                                self.validate_software_modules(section, agent)
+                                self.validate_software_modules(section, agent, settings_file["Agents"][agent]["Sensors"])
                 print("Section {} is valid!".format(key))
             return True
         except Exception as error:
+            traceback.print_exc()
             print(error)
             return False
 
@@ -1143,7 +1182,85 @@ class SWARM():
         if sensor_setting > max or sensor_setting < min:
             raise AssertionError("Error!\n\n{} {} parameter Publishing Rate was invalid! The Rate must be a float value between {} and {}!\n Your Input: {}".format(sensor_type, sensor_name, max, min, sensor_setting))
 
-    def validate_software_modules(self, modules: dict, agent_name: str) -> bool:
+    def validate_camera_stream_settings(self,
+                                        camera_name: str,
+                                        sensors: dict,
+                                        module_name: str) -> bool:
+        """
+        Validate that the User has correctly set the appropriate camera
+        stream information, by inputting a camera name that exists
+        """
+        if "Cameras" not in sensors.keys():
+            raise AssertionError("Error!\n\n Module {} subscriptions settings is invalid. Cameras has not been added as a section to the Sensors list!!\nPlease add a Cameras section to the Sensors system.".format(module_name, camera_name))
+        if camera_name not in sensors["Cameras"].keys():
+            raise AssertionError("Error!\n\n Module {} subscriptions settings is invalid. {} has not been listed as a Camera in the Cameras section!!\nPlease add a Camera with this name".format(module_name, camera_name))
+        
+        return True
+
+    def validate_environment_options(self, env_options: dict) -> None:
+        """
+        Validate the options provided by the environment.
+
+        ### Inputs:
+        - env_options [dict] The options from the Environment section
+                             of the simulation settings file.
+        
+        ### Returns:
+        - Flag determining whether the validation was completed or not
+        """
+        # Check if the User has provided options for the Environment
+        if "Options" in env_options.keys():
+            # Iterate through the options, validating that the option is valid
+            # for the environment specified.
+
+            # Extract the name from the options. This is valid since we have
+            # checked that a name was provided before calling this method
+            env_name = env_options["Name"]
+            for option_name, option in env_options["Options"].items():
+                self._validate_option_in_env_supported(option_name, option, env_name)
+
+    def _validate_option_in_env_supported(self, option_name: str, option: str, env_name: str) -> None:
+        """
+        Validate that the option provided is a valid option to select
+        and has a valid input provdied.
+
+        ### Inputs:
+        - option_name [str] The name of the Option to select
+        - option [str] The user selected option
+        - env_name [str] The name of the environment that was selected
+
+        ### Outputs:
+        - A flag describing whether the option is validated or not
+        """
+        valid_options = self._get_supported_environments()["Environments"][env_name]["Options"]
+
+        if len(valid_options) == 0:
+            raise AssertionError(
+                        "Error\n" +
+                        "Environment {} has no available options!\n".format(env_name) +
+                        "Please remove any options from the 'Options' section"
+                    )
+
+        if option_name not in valid_options.keys():
+            raise AssertionError(
+                        "Error\n" +
+                        "The option {} with option {} is not valid!\n".format(option_name, option) +
+                        "The valid options are: {}".format(valid_options)
+                    )
+
+        # Provides a list of acceptable inputs from the User
+        valid_option_entries = valid_options[option_name]["ValidOptions"]
+
+        if option not in valid_option_entries:
+            raise AssertionError(
+                        "Error\n" +
+                        "The option {} with option {} is not valid!\n".format(option_name, option) +
+                        "The valid option entries are: {} \n".format(valid_option_entries) +
+                        "The default value is {}\n".format(valid_options[option_name]["DefaultValue"]) +
+                        "Option Description: {}".format(valid_options[option_name]["Description"])
+                    )
+
+    def validate_software_modules(self, modules: dict, agent_name: str, sensors: dict) -> bool:
         """
         Validate the individual software modules for a specific agent.
         Ensure that each selected parameter is valid and that the
@@ -1184,7 +1301,7 @@ class SWARM():
                             for param_name, value in algo_setting.items():
                                 if not param_name in valid_params.keys():
                                     raise AssertionError("Parameter {} for {} is invalid.\nValid options are {}\nYour Input: {}".format(
-                                        param_name, module_name, valid_params[param_name], value))
+                                        param_name, module_name, valid_params.keys(), value))
                                 if not type(value).__name__ == valid_params[param_name]["type"]:
                                     raise AssertionError("Parameter {} for {} is an invalid type.\nValid options are {}\nYour Input: {}".format(
                                         param_name, module_name, valid_params[param_name]["type"], type(value).__name__))
@@ -1232,8 +1349,13 @@ class SWARM():
                 if setting_name == "Publishes" or setting_name == "Subscribes":
                     valid_messages = supported_modules["ValidMessageTypes"]
                     for message in setting:
-                        if message not in valid_messages:
-                            raise AssertionError("\nError!\nInvalid message to publish of type {}\nSupported Messages are {}\n".format(message, valid_messages))
+                        if isinstance(message, str):
+                            if message not in valid_messages:
+                                raise AssertionError("\nError!\nInvalid message to publish of type {}\nSupported Messages are {}\n".format(message, valid_messages))
+                        elif isinstance(message, dict):
+                            if "Image" in message.keys():
+                                camera_name = message["Image"]
+                                self.validate_camera_stream_settings(camera_name, sensors, module_name)
                 if setting_name == "Parameters":
                     valid_params = supported_modules[module_name]["ValidModuleParameters"]
                     for param_name, value in setting.items():
