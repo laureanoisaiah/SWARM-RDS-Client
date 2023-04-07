@@ -595,6 +595,8 @@ class SWARM():
 
             # Next, validate each section
             for key, options in settings_file.items():
+                print("\nValidating section {}".format(key))
+                time.sleep(0.5)
                 if key == "ID":
                     try:
                         assert isinstance(options, int)
@@ -684,38 +686,39 @@ class SWARM():
                     valid_video_types = ["MP4"]
                     try:
                         for data_type in options.keys():
+                            print("Validating Data Type: {}".format(data_type))
                             if not data_type in valid_options:
                                 raise AssertionError(
                                     "Error! {} is not a valid type of data to collect".format(data_type))
                             if data_type == "Images":
                                 if not options["Images"]["Format"] in valid_image_types:
                                     raise AssertionError(
-                                        "Error! {} is not a valid image format to save collected images".format(data_type))
+                                        "Error!\n{} is not a valid image format to save collected images".format(data_type))
                                 if not "ImagesPerSecond" in list(options[data_type].keys()):
                                     raise AssertionError(
-                                        "\nError! You must include the parameter 'ImagesPerSecond' in the Images options!\n")
+                                        "\nError!\nYou must include the parameter 'ImagesPerSecond' in the Images options!\n")
                                 if not isinstance(options[data_type]["ImagesPerSecond"], int):
                                     raise AssertionError(
-                                        "\nError! ImagesPerSecond must be a integer value!!\n")
+                                        "\nError!\nImagesPerSecond must be a integer value!!\n")
                                 if options[data_type]["ImagesPerSecond"] > 20 or options[data_type]["ImagesPerSecond"] < 1:
                                     raise AssertionError(
-                                        "\nError! ImagesPerSecond must be within the range of 1 to 20 images!\n")
+                                        "\nError!\nImagesPerSecond must be within the range of 1 to 20 images!\n")
                             elif data_type == "Video":
                                 if "Format" not in options["Video"].keys():
                                     raise AssertionError(
-                                        "Error! 'Format' is a required key in this section! Video Format options are {}".format(valid_video_types))
+                                        "Error!\n'Format' is a required key in this section! Video Format options are {}".format(valid_video_types))
                                 if "VideoName" not in options["Video"].keys():
                                     raise AssertionError(
-                                        "\nError! 'VideoName' is a required key in this section!\nThis must be a string!\n\n")
+                                        "\nError!\n'VideoName' is a required key in this section!\nThis must be a string!\n\n")
                                 if "CameraName" not in options["Video"].keys():
                                     raise AssertionError(
-                                        "\nError! 'CameraName' is a required key in this section!\nThis must be a string!\n\n")
+                                        "\nError!\n'CameraName' is a required key in this section!\nThis must be a string!\n\n")
                                 if not options["Video"]["Format"] in valid_video_types:
                                     raise AssertionError(
-                                        "Error! {} is not a valid video format!".format(options["Video"]["Format"]))
+                                        "Error!\n{} is not a valid video format!".format(options["Video"]["Format"]))
                                 if not isinstance(options["Video"]["VideoName"], str):
                                     raise AssertionError(
-                                        "Error! Video name must be a string! \n")
+                                        "Error!\nVideo name must be a string! \n")
                                 if not isinstance(options["Video"]["CameraName"], str):
                                     raise AssertionError(
                                         "Error!\n\n Data Options error!\n Camera name must be a string! \n")
@@ -1162,6 +1165,7 @@ class SWARM():
                 print("Section {} is valid!".format(key))
             return True
         except Exception as error:
+
             traceback.print_exc()
             print(error)
             return False
