@@ -43,7 +43,7 @@ if not return_user_boolean(args.download_data_only):
 
     try:
         print("\nRunning {} simulation in the {} environment".format(args.sim_name, args.map_name))
-        sim_manager.run_simulation(args.map_name, args.sim_name)
+        sim_manager.run_simulation(args.map_name, args.sim_name, ip_address=args.ip_address)
     except KeyboardInterrupt:
         pass
 
