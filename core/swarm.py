@@ -18,9 +18,9 @@ import matplotlib.ticker as ticker
 from uuid import uuid4
 
 from core.client import SWARMClient
-from utils.date_utils import convert_datetime_to_str
-from utils.settings_utils import receive_user_input, generate_new_user_settings_file
-from utils.constants import CAMERA_SETTINGS_DEFAULTS
+from utilities.date_utils import convert_datetime_to_str
+from utilities.settings_utils import receive_user_input, generate_new_user_settings_file
+from utilities.constants import CAMERA_SETTINGS_DEFAULTS
 
 
 class SWARM():
@@ -1305,10 +1305,17 @@ class SWARM():
                             for param_name, value in algo_setting.items():
                                 if not param_name in valid_params.keys():
                                     raise AssertionError("Parameter {} for {} is invalid.\nValid options are {}\nYour Input: {}".format(
-                                        param_name, module_name, valid_params.keys(), value))
+                                        param_name, module_name, valid_params.keys(), param_name))
+                                
                                 if not type(value).__name__ == valid_params[param_name]["type"]:
                                     raise AssertionError("Parameter {} for {} is an invalid type.\nValid options are {}\nYour Input: {}".format(
                                         param_name, module_name, valid_params[param_name]["type"], type(value).__name__))
+                                if type(value).__name__ == "str":
+                                    if len(valid_params[param_name]["valid_entries"]) > 0 and valid_params[param_name]["valid_entries"][0] == "*":
+                                        continue
+                                    if not value in valid_params[param_name]["valid_entries"]:
+                                        raise AssertionError("\nError:\nParameter {} for {} is not a valid entry.\nValid options are {}\nYour Input: {}".format(
+                                            param_name, module_name, valid_params[param_name]["valid_entries"], value))
                                 if type(value).__name__ == "list":
                                     if len(value) != valid_params[param_name]["length"]:
                                         raise AssertionError("Parameter {} for module {} has too many elements!.\nValid options are {}\nYour Input: {}".format(
@@ -1323,8 +1330,10 @@ class SWARM():
                                                     param_name, module_name, valid_params[param_name]["field_range"], value))
                                 if type(value).__name__ == "dict":
                                     for key, item in value.items():
-                                        if key not in valid_params[param_name]["valid_fields"]:
-                                            raise AssertionError("Key {} for Parameter {} is an invalid.\nValid options are {}\nYour Input: {}".format(
+                                        if len(valid_params[param_name]["valid_fields"]) > 0 and valid_params[param_name]["valid_fields"][-1] == "*":
+                                            continue
+                                        if item not in valid_params[param_name]["valid_fields"]:
+                                            raise AssertionError("Key {} for Parameter {} is invalid.\nValid options are {}\nYour Input: {}".format(
                                                 key, param_name, module_name, valid_params[param_name]["valid_fields"], key))
                                         if not type(item).__name__ == valid_params[param_name]["field_data_type"]:
                                             raise AssertionError("Key {} for Parameter {} for {} is an invalid type.\nValid options are {}\nYour Input: {}".format(
@@ -1365,7 +1374,7 @@ class SWARM():
                     for param_name, value in setting.items():
                         if not param_name in valid_params.keys():
                             raise AssertionError("Parameter {} for {} is invalid.\nValid options are {}\nYour Input: {}".format(
-                                param_name, module_name, valid_params, value))
+                                param_name, module_name, list(valid_params.keys()), value))
                         if not type(value).__name__ == valid_params[param_name]["type"]:
                             raise AssertionError("Parameter {} for {} is an invalid type.\nValid options are {}\nYour Input: {}".format(
                                 param_name, module_name, valid_params[param_name]["type"], type(value).__name__))
@@ -1383,6 +1392,8 @@ class SWARM():
                                             param_name, module_name, valid_params[param_name]["field_range"], value))
                         if type(value).__name__ == "dict":
                             for key, item in value.items():
+                                if valid_params[param_name]["field_data_type"] == "*":
+                                    continue
                                 if key not in valid_params[param_name]["valid_fields"]:
                                     raise AssertionError("Key {} for Parameter {} is an invalid.\nValid options are {}\nYour Input: {}".format(
                                         key, param_name, module_name, valid_params[param_name]["valid_fields"], key))
@@ -1540,10 +1551,9 @@ class SWARM():
         try:
             # Only connect once we are ready to send a command
 
-            print("Running simulation {}".format(sim_name))
-
             settings, trajectory = self.retrieve_sim_package(
                 sim_name, folder=folder)
+
             settings_valid = self.validate_settings_file(json.loads(settings))
             if not settings_valid:
                 print(
@@ -1559,15 +1569,21 @@ class SWARM():
                     print(
                         "Simulation Run Failed.\nReason: Trajectory file invalid! Please see the settings folder!")
                     exit(1)
-            self.client.connect()
+            
+
+            user_code = self.client.load_user_code(json.loads(settings))
+
             message = {
                 "Command": "Run Simulation",
                 "Settings": settings,
                 "Trajectory": trajectory,
-                "UserCode": self.client.load_user_code(json.loads(settings)),
+                "UserCode": user_code,
                 "Sim_name": sim_name,
                 "Map_name": map_name
             }
+            self.client.connect()
+            # Give the client time to establish the connection
+            time.sleep(2.0)
             completed = self.client.send_simulation_execution_package(
                 message)
             if "Error" in completed.keys():

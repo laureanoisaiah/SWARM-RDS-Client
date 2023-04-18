@@ -12,8 +12,10 @@ import time
 import traceback
 import os
 import machineid
-from tqdm import tqdm
+import subprocess
+import sys
 
+from tqdm import tqdm
 from threading import Thread, Event
 from json import JSONDecodeError
 
@@ -21,7 +23,8 @@ from core.validator import activate_license
 
 # from utils.constants import ENCODING_SCHEME
 ENCODING_SCHEME = "utf-8"
-BUFFER_SIZE = 4096
+BUFFER_SIZE = 4096 * 2
+MAX_PACKET_SIZE = 2048 * 2
 
 
 class SWARMClient(Thread):
@@ -47,6 +50,7 @@ class SWARMClient(Thread):
         self.debug = debug
         self.license_key = ""
         self.license_activated = False
+        self.encoding = "utf-8"
         # Save the last response provided
         self.last_response = dict()
         self.machine_id = machineid.hashed_id('swarm-dev')
@@ -150,6 +154,7 @@ class SWARMClient(Thread):
             return True
         except Exception as error:
             print(error)
+            exit(1)
             return False
 
     def send_message(self, message: str) -> bool:
@@ -172,18 +177,92 @@ class SWARMClient(Thread):
                                      Body={
                                          "Bytes": len(message)
                                      })
+                print("DEBUG Sent header packet")
                 self.socket.send(
                     json.dumps(header_packet).encode(ENCODING_SCHEME))
                 # Don't immediately step on the socket. Give it some room to
                 # breathe
                 time.sleep(0.05)
+                print("Sending message")
                 self.socket.send(message)
                 return True
             else:
                 raise ConnectionError("Client is no longer connected")
         except ConnectionError:
+            traceback.print_exc()
             print("Connection failed")
             return False
+        
+    def send_multipart_file(self, message_id: int, file_name: str) -> None:
+        """
+        Send a multipart file that has already been encoded in bytes.
+
+        # Inputs:
+        - message [dict] The initial message describing what to send.
+
+        # Outputs:
+        - None
+        """
+        print("Sending multipart file to User")
+        start_message = {"ID": message_id,
+                         "Type": "Multipart",
+                         "Body": {
+            "Number Of Bytes": 0,
+            "Number Of Packets": 0,
+            "LicenseKey": self.retrieve_license_key(),
+            "MachineID": self.machine_id
+        }}
+        with open(file_name, "rb") as file:
+            raw_bytes = file.read()
+
+        start_message["Body"]["Command"] = "Load Model"
+        # We need full paths for the file name to start:
+        # Example: models/SSD.tar.gz but we only want the name of the tar
+        # file to be sent. So, always take the last part of the file name
+        start_message["Body"]["FileName"] = file_name.split("/")[-1]
+
+        start_message["Body"]["PacketSize"] = MAX_PACKET_SIZE
+        start_message["Body"]["Number Of Packets"] = (
+            int(len(raw_bytes) / MAX_PACKET_SIZE)) + 1
+        start_message["Body"]["Number Of Bytes"] = len(raw_bytes)
+        chunks = [raw_bytes[(i * MAX_PACKET_SIZE):(i * MAX_PACKET_SIZE) + MAX_PACKET_SIZE]
+                  for i in range(int(len(raw_bytes) / MAX_PACKET_SIZE) + 1)]
+        # extra_bytes = int(start_message["Body"]["Number Of Packets"]/10) * 20 + int(start_message["Body"]["Number Of Packets"] % 10) * 1
+        # start_message["Body"]["Number Of Bytes"] += extra_bytes
+        encoded_message = json.dumps(start_message).encode(self.encoding)
+        
+        # Don't immediately step on the socket. Give it some room to
+        # breathe
+        time.sleep(0.1)
+        self.send_message(encoded_message)
+        print("DEBUG Sent header message")
+        time.sleep(0.5)
+        for i, chunk in enumerate(chunks):
+            try:
+                #print("DEBUG: Sending chunk {}".format(i))
+                # chunk = bytes("{}".format(i), encoding=self.encoding) + chunk
+                sent = self.socket.sendall(chunk)
+                # assert sent == MAX_PACKET_SIZE
+                # Sleep for 20 milliseconds on each message
+                # time.sleep(0.005)
+            except BlockingIOError:
+                chunk_not_sent = False
+                retries = 0
+                while not chunk_not_sent or (retries < 50):
+                    try:
+                        # Resource temp Unavailable
+                        # time.sleep(0.01)
+                        self.socket.send(chunk)
+                        chunk_not_sent = True
+                    except BlockingIOError:
+                        retries += 1
+                    except ConnectionResetError:
+                        break
+            except AssertionError:
+                print("Sent {} of {} bytes".format(sent, MAX_PACKET_SIZE))
+                self.socket.send(chunk[sent:])
+
+        return True
 
     def wait_for_response_packet(self, message_id: int) -> dict:
         """
@@ -195,11 +274,13 @@ class SWARMClient(Thread):
         ### Outputs:
         - The returned data as a dictionary, indicating a JSON packet
         """
+        print(message_id)
         response_completed = False
         received_message = None
         received_header = False
         received_bytes = b''
         total_bytes = 0
+        message = None
         while not response_completed:
             try:
                 message = self.socket.recv(BUFFER_SIZE)
@@ -220,7 +301,10 @@ class SWARMClient(Thread):
                         continue
 
                 if int(message["ID"]) == message_id:
+                    print(message["ID"])
+                    print("Received the response message from the server")
                     received_message = message["Body"]
+                    print(received_message)
                     response_completed = True
                     self.message_map[str(message_id)]["Completed"] = True
                 else:
@@ -247,16 +331,25 @@ class SWARMClient(Thread):
                 # Ensure this thread does not cause the computer
                 # to take off!
                 time.sleep(0.001)
-            except AssertionError:
+            except AssertionError as error:
+                print("Critical Error occurred!")
+                print(error)
                 break
-            except KeyboardInterrupt:
-                self.socket.close()
+            except OSError as error:
+                print(error)
                 break
+            # except KeyboardInterrupt:
+            #     self.socket.close()
+            #     break
             except JSONDecodeError:
-                self.socket.close()
-                break
+                pass
+                # print("DEBUG JSON Decoding Error")
+                # if message is not None:
+                #     print(message.decode(ENCODING_SCHEME))
+                # self.socket.close()
+                # break
             except Exception:
-                if message:
+                if message is not None:
                     print(message)
                 traceback.print_exc()
 
@@ -342,6 +435,61 @@ class SWARMClient(Thread):
         recv_data = b''.join(recv_bytes)
         return recv_data
 
+    def _retrieve_loaded_models_from_server(self) -> list:
+        """
+        Retrieve the previously loaded modules from the server. We want
+        to ensure that we are as efficient as possible when handling
+        User code and the uploading process, since we could be
+        transferring a significant amount of data.
+
+        ### Inputs:
+        - None
+
+        ### Outputs:
+        - A list of models
+        """
+        message = dict(ID=self.message_id,
+                       Type="Singular",
+                       Body={
+                                "Command": "Retrieve Loaded Models",
+                                "LicenseKey": self.retrieve_license_key(),
+                                "MachineID": self.machine_id
+                            })
+        self.message_map[str(self.message_id)] = {
+                "Completed": False,
+                "ID": str(self.message_id)
+            }
+        sent = self.send_message(json.dumps(message).encode(ENCODING_SCHEME))
+        if sent:
+            # We are waiting for a message that contains a Body with the following
+            # information:
+            # {
+            #   "Body": {
+            #       "Models": ["SSD"],
+            #       "Errors": []
+            #   }
+            # }
+            data = self.wait_for_response_packet(self.message_id)
+
+            print("DEBUG Models message: {}".format(data))
+            self.message_map[str(self.message_id)]["Completed"] = True
+            # Increment the next message ID
+            if message["ID"] == self.message_id and len(data["Errors"]) == 0:
+                self.message_id += 1
+                return data["Models"]
+            else:
+                print("Error while retrieving loaded models")
+                for error in data["Errors"]:
+                    print(f"\n{error}")
+                print("\nPlease try again!")
+                self.message_id += 1
+
+                return None
+        
+        self.message_id += 1
+        return None
+
+
     def load_user_code(self, settings: dict, path: str = ".") -> str:
         """
         Load and prepare the User Code for sending. This entails reading
@@ -352,19 +500,94 @@ class SWARMClient(Thread):
         - settings [dict] The User defined settings of the Agents
         """
         user_code = dict()
-
+        loaded_models = None
+        cycle_connection = False
         for agent_name, agent_info in settings["Agents"].items():
             user_code[agent_name] = dict()
             for module_name, module in agent_info["SoftwareModules"].items():
-                isCustomModule, isCustomAlgo = self.query_supported_module_list(module_name, module["Algorithm"]["ClassName"])
-                if isCustomAlgo:
-                    with open("{}/user_code/{}/{}.py".format(path, agent_name,  module["Algorithm"]["ClassName"]), "r") as file:
-                        user_code[agent_name][module_name] = {"Code": json.dumps(file.read()), "AlgorithmName":  module["Algorithm"]["ClassName"]}
-                elif isCustomModule:
-                    with open("{}/user_code/{}/{}.py".format(path, agent_name, module_name), "r") as file:
-                        user_code[agent_name][module_name] = {"Code": json.dumps(file.read()), "AlgorithmName": module["Algorithm"]["ClassName"]}
-        
+                # Determine that this module can load custom models, where we first
+                # check if the User has listed any models that will be used.
+                if "Parameters" in module.keys() and "Model" in module["Parameters"].keys() and self._query_custom_model_module_list(module_name):
+                    if loaded_models is None:
+                        self.connect()
+                        loaded_models = self._retrieve_loaded_models_from_server()
+                        # If we fail to retrieve the loaded models, then
+                        # cancel the valdiation process
+                        self.socket.close()
+                        time.sleep(1.0)
+                        self.connected = False
+                        if loaded_models == None:
+                            exit(1)
+                    # Check if the model has already been tared for loading
+                    if  module["Parameters"]["Model"] not in loaded_models:
+                        tar_file_name = self._generate_model_tar_file(module["Parameters"]["Model"])
+                        self.connect()
+                        sent = self.send_multipart_file(self.message_id, tar_file_name)
+                        
+                        time.sleep(1.0)
+                        self.connected = False
+                        self.message_map[str(self.message_id)] = {
+                            "Completed": False,
+                            "ID": str(self.message_id)
+                        }
+                        return_message = self.wait_for_response_packet(self.message_id)
+                        self.socket.close()
+                        if sent:
+                            self.message_id += 1
+                        loaded_models = return_message["Models"]
+                    else:
+                        tar_file_name = "{}.tar.gz".format(module["Parameters"]["Model"])
+                        
+                    user_code[agent_name][module_name] = {"Code": tar_file_name, "Model": True, "AlgorithmName":  module["Algorithm"]["ClassName"]}
+                else:
+                    isCustomModule, isCustomAlgo = self.query_supported_module_list(module_name, module["Algorithm"]["ClassName"])
+                    if isCustomAlgo:
+                        with open("{}/user_code/{}/{}.py".format(path, agent_name,  module["Algorithm"]["ClassName"]), "r") as file:
+                            user_code[agent_name][module_name] = {"Code": json.dumps(file.read()), "Model": False, "AlgorithmName":  module["Algorithm"]["ClassName"]}
+                    elif isCustomModule:
+                        with open("{}/user_code/{}/{}.py".format(path, agent_name, module_name), "r") as file:
+                            user_code[agent_name][module_name] = {"Code": json.dumps(file.read()), "Model": False, "AlgorithmName": module["Algorithm"]["ClassName"]}
+
         return user_code
+
+    def _generate_model_tar_file(self, model_name: str) -> str:
+        """
+        Generate a Tarball to deliver to the Server to be installed.
+
+        ### Inputs:
+        - model_name [str] The name of the folder to load
+
+        ### Outputs:
+        - The tar file name
+        """
+        if sys.platform.startswith('win32') or sys.platform.startswith('cygwin'):
+            pass
+        else:
+            subprocess.run(["tar", "-czvf", "models/{}.tar.gz".format(model_name), "models/{}".format(model_name)])
+        
+        return "models/{}.tar.gz".format(model_name)
+
+    def _query_custom_model_module_list(self, module_name: str) -> bool:
+        """
+        Check if the module that is being submitted is capable of
+        running custom machine learning models.
+
+        ### Inputs:
+        - module_name [str] The name of the overall module to load
+
+        ### Output:
+        - A boolean flag that says whether the module is available for
+          this feature.
+        """
+        with open("core/SupportedSoftwareModules.json", "r") as file:
+            supported_modules = json.load(file)["SupportedModules"]
+
+        # If the User is defining a new module that we don't know the
+        # name of.
+        if module_name not in supported_modules["ValidCustomModelModules"]:
+            return False
+
+        return True
 
     def query_supported_module_list(self, module_name: str, class_name: str) -> bool:
         """
@@ -412,12 +635,14 @@ class SWARMClient(Thread):
             json_file["LicenseKey"] = self.retrieve_license_key()
             json_file["MachineID"] = self.machine_id
             message_packet["Body"] = json_file
+
             json_str = json.dumps(message_packet).encode(ENCODING_SCHEME)
 
             self.message_map[str(self.message_id)] = {
                 "Completed": False,
                 "ID": str(self.message_id)
             }
+            print("DEBUG Sending execution message to server")
             sent = self.send_message(json_str)
 
             completed = self.wait_for_response_packet(self.message_id)
@@ -496,8 +721,11 @@ class SWARMClient(Thread):
                 if not "data" in dirs:
                     os.makedirs("data")
                     # subprocess.run(["mkdir", "-p", "{}/data".format(os.getcwd())])
+                # TODO Make this either a tar of a zip file
                 with open("{}/data/{}_data.tar.gz".format(os.getcwd(), message["SimName"]), "wb") as file:
                     file.write(raw_img_bytes)
+                
+                os.system("tar -xf {}/data/{}_data.tar.gz -C {}/data && rm {}/data/{}_data.tar.gz".format(os.getcwd(), message["SimName"], os.getcwd(), os.getcwd(), message["SimName"]))
             # Only increment to the next message id if we know the last message
             # was sent.
             if sent:

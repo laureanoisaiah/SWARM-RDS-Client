@@ -23,7 +23,9 @@
             "ObstacleAvoidance",
             "Detector",
             "VideoRecorder",
-            "Mapping"
+            "Mapping",
+            "TorchPerception",
+            "Perception"
         ],
         "ValidMessageTypes": [
             "MovementCommand",
@@ -37,7 +39,12 @@
             "Quaternion",
             "OccupancyMap",
             "Heading",
-            "Speed"
+            "Speed",
+            "Image",
+            "Detection"
+        ],
+        "ValidCustomModelModules": [
+            "TorchPerception"
         ],
         "Mapping": {
             "ValidClassNames": [
@@ -159,7 +166,11 @@
                     "setpoint_type": {
                         "type": "str",
                         "description": "[m/s] The default speed the trajectory should be planned for in meters per second",
-                        "valid_entries": ["position", "velocity", "angular_rate"]
+                        "valid_entries": [
+                            "position",
+                            "velocity",
+                            "angular_rate"
+                        ]
                     }
                 }
             },
@@ -191,7 +202,7 @@
                     "Trajectory"
                 ]
             },
-            "ValidModuleParameters":{
+            "ValidModuleParameters": {
                 "completed_waypoint_distance": {
                     "type": "float",
                     "description": "The distance in meters to deem a waypoint 'completed'",
@@ -335,6 +346,145 @@
                     "Heading"
                 ]
             }
+        },
+        "TorchPerception": {
+            "ValidClassNames": [
+                "TorchHubModel",
+                "TorchCustomModel"
+            ],
+            "ValidParameters": {
+                "TorchHubModel": {
+                    "model_type": {
+                        "type": "str",
+                        "description": "The type of Computer Vision model that the system is",
+                        "valid_entries": [
+                            "Detection",
+                            "Classify",
+                            "Segment"
+                        ]
+                    },
+                    "repo_name": {
+                        "type": "str",
+                        "description": "The Pytorch Hub name that will be used to extract the models",
+                        "valid_entries": [
+                            "ultralytics/yolov5"
+                        ]
+                    },
+                    "model_name": {
+                        "type": "str",
+                        "description": "The type of model, usually indicating the size of the model",
+                        "valid_entries": [
+                            "yolov5s"
+                        ]
+                    },
+                    "output_type": {
+                        "type": "str",
+                        "description": "How the detections should be recorded in relation to the images",
+                        "valid_entries": [
+                            "images",
+                            "video",
+                            "stream"
+                        ]
+                    },
+                    "camera_name": {
+                        "type": "str",
+                        "description": "The name of the camera that is used as the input to this model. Should exist in the Sensors section",
+                        "valid_entries": [
+                            "*"
+                        ]
+                    }
+                },
+                "TorchCustomModel": {
+                    "algorithm_type": {
+                        "type": "str",
+                        "description": "The type of Computer Vision model that the system is",
+                        "valid_entries": [
+                            "Detection",
+                            "Classify",
+                            "Segment"
+                        ]
+                    },
+                    "model_name": {
+                        "type": "str",
+                        "description": "The Python class name of the Model Wrapper to use",
+                        "valid_entries": [
+                            "*"
+                        ]
+                    },
+                    "weight_file_name": {
+                        "type": "str",
+                        "description": "The file name of the weights to use",
+                        "valid_entries": [
+                            "*"
+                        ]
+                    },
+                    "output_type": {
+                        "type": "str",
+                        "description": "How the detections should be recorded in relation to the images",
+                        "valid_entries": [
+                            "images",
+                            "video",
+                            "stream"
+                        ]
+                    },
+                    "camera_name": {
+                        "type": "str",
+                        "description": "The name of the camera that is used as the input to this model. Should exist in the Sensors section",
+                        "valid_entries": [
+                            "*"
+                        ]
+                    },
+                    "model_folder_name": {
+                        "type": "str",
+                        "description": "The overall folder that the algorithm should be in",
+                        "valid_entries": [
+                            "*"
+                        ]
+                    },
+                    "model_parameters": {
+                        "type": "dict",
+                        "description": "The custom parameters to be passed to the Network",
+                        "valid_fields": [
+                            "*"
+                        ],
+                        "field_data_type": "*",
+                        "field_range": [
+                            "*"
+                        ]
+                    }
+                }
+            },
+            "ValidModuleParameters": {
+                "Model": {
+                    "type": "str",
+                    "description": "The name of the model that will be used. This helps the server know which model to load",
+                    "valid_entries": [
+                        "*"
+                    ]
+                }
+            },
+            "ValidInputArgs": {
+                "TorchHubModel": [
+                    "Image"
+                ],
+                "TorchCustomModel": [
+                    "Image"
+                ]
+            },
+            "ValidReturnValues": {
+                "TorchHubModel": [
+                    "Detection"
+                ],
+                "TorchCustomModel": [
+                    "Detection"
+                ]
+            }
+        },
+        "Perception": {
+            "ValidClassNames": [],
+            "ValidParameters": {},
+            "ValidInputArgs": {},
+            "ValidReturnValues": {}
         }
     }
 }
