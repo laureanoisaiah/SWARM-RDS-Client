@@ -177,7 +177,6 @@ class SWARMClient(Thread):
                                      Body={
                                          "Bytes": len(message)
                                      })
-                print("DEBUG Sent header packet")
                 self.socket.send(
                     json.dumps(header_packet).encode(ENCODING_SCHEME))
                 # Don't immediately step on the socket. Give it some room to
@@ -235,7 +234,6 @@ class SWARMClient(Thread):
         # breathe
         time.sleep(0.1)
         self.send_message(encoded_message)
-        print("DEBUG Sent header message")
         time.sleep(0.5)
         for i, chunk in enumerate(chunks):
             try:
@@ -274,7 +272,6 @@ class SWARMClient(Thread):
         ### Outputs:
         - The returned data as a dictionary, indicating a JSON packet
         """
-        print(message_id)
         response_completed = False
         received_message = None
         received_header = False
@@ -301,10 +298,7 @@ class SWARMClient(Thread):
                         continue
 
                 if int(message["ID"]) == message_id:
-                    print(message["ID"])
-                    print("Received the response message from the server")
                     received_message = message["Body"]
-                    print(received_message)
                     response_completed = True
                     self.message_map[str(message_id)]["Completed"] = True
                 else:
@@ -338,16 +332,13 @@ class SWARMClient(Thread):
             except OSError as error:
                 print(error)
                 break
-            # except KeyboardInterrupt:
-            #     self.socket.close()
-            #     break
+            except KeyboardInterrupt:
+                self.socket.close()
+                break
             except JSONDecodeError:
                 pass
-                # print("DEBUG JSON Decoding Error")
-                # if message is not None:
-                #     print(message.decode(ENCODING_SCHEME))
-                # self.socket.close()
-                # break
+                self.socket.close()
+                break
             except Exception:
                 if message is not None:
                     print(message)
@@ -405,16 +396,12 @@ class SWARMClient(Thread):
         ### Outputs:
         - received bytes
         """
-        if self.debug:
-            print("DEBUG: Handing Multipart Message")
+        
         numb_packets = message["Body"]["Number Of Packets"]
         total_bytes = message["Body"]["Number Of Bytes"]
         recv_bytes = list()
         total_recv_bytes = 0
         print("Downloading {} bytes".format(total_bytes))
-
-        if self.debug:
-            print(f"DEBUG: Packets to download {numb_packets}")
         
         with tqdm(unit="B", unit_scale=True, desc="Data Tarball", total=total_bytes) as bar:
             while total_recv_bytes < total_bytes:
@@ -471,7 +458,6 @@ class SWARMClient(Thread):
             # }
             data = self.wait_for_response_packet(self.message_id)
 
-            print("DEBUG Models message: {}".format(data))
             self.message_map[str(self.message_id)]["Completed"] = True
             # Increment the next message ID
             if message["ID"] == self.message_id and len(data["Errors"]) == 0:
@@ -642,7 +628,6 @@ class SWARMClient(Thread):
                 "Completed": False,
                 "ID": str(self.message_id)
             }
-            print("DEBUG Sending execution message to server")
             sent = self.send_message(json_str)
 
             completed = self.wait_for_response_packet(self.message_id)

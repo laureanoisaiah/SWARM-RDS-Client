@@ -138,3 +138,7 @@ settings/LicenseKey.json
 */.cache
 
 .DS_Store
+
+# Ignore PyTorch weight files
+*.pt
+*.pth

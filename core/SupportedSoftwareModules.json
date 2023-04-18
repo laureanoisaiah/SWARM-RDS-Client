@@ -354,7 +354,7 @@
             ],
             "ValidParameters": {
                 "TorchHubModel": {
-                    "model_type": {
+                    "algorithm_type": {
                         "type": "str",
                         "description": "The type of Computer Vision model that the system is",
                         "valid_entries": [
