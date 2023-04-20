@@ -1201,6 +1201,32 @@ class SWARM():
         
         return True
 
+    def _validate_camera_subscription(self,
+                                      camera_name: str,
+                                      module_name: str,
+                                      module_parameters: dict) -> bool:
+        """
+        Validate whether the user has added an image subscription for
+        the camera that was selected in the module.
+
+        ### Inputs:
+        - camera_name [str] The unique name of the camera.
+        - module_name [str] The name of the SW Module being processed
+        - module_parameters [dict] The module paramters
+
+        ### Outputs:
+        - A flag that the camera has been subscribed to
+        """
+        found_subscription = False
+        for subscription in module_parameters["Subscribes"]:
+            if type(subscription) == dict:
+                if "Image" in subscription.keys():
+                    if camera_name == subscription["Image"]:
+                        found_subscription = True
+        
+        if not found_subscription:
+            raise AssertionError("Error!\n\n Module {} has requested to use an image from a Camera in the algorithm, but not subscription to the Camera has been provided!\nPlease add the following to your Subscribes section: Image: {}".format(module_name, camera_name))
+
     def validate_environment_options(self, env_options: dict) -> None:
         """
         Validate the options provided by the environment.
@@ -1311,6 +1337,16 @@ class SWARM():
                                     raise AssertionError("Parameter {} for {} is an invalid type.\nValid options are {}\nYour Input: {}".format(
                                         param_name, module_name, valid_params[param_name]["type"], type(value).__name__))
                                 if type(value).__name__ == "str":
+                                    # TODO Don't hardcode these values
+                                    if param_name == "output_type":
+                                        # If we are using a remote server, we don't have access to visuals
+                                        if not self._local:
+                                             valid_params[param_name]["valid_entries"] = ["images", "video"]
+                                    # If the user is going to be using a Camera
+                                    # image, they need to have a camera subscription set up in the module
+                                    if param_name == "camera_name":
+                                        self.validate_camera_stream_settings(value, sensors, module_name)
+                                        self._validate_camera_subscription(value, module_name, settings)
                                     if len(valid_params[param_name]["valid_entries"]) > 0 and valid_params[param_name]["valid_entries"][0] == "*":
                                         continue
                                     if not value in valid_params[param_name]["valid_entries"]:
@@ -1525,6 +1561,23 @@ class SWARM():
             traceback.print_exc()
             return False
 
+    def _determine_local_simulation(self, ip_address: str) -> None:
+        """
+        Determine if we are accessing the SWARM System locally or from
+        a remote server. If we aren't on a local version, specific
+        functionality will not be turned on.
+
+        ### Inputs:
+        - ip_address [str] The IPv4 address of the server
+
+        ### Outputs:
+        - Sets the local flag
+        """
+        self._local = True
+        if ip_address != "127.0.0.1":
+            print("Utilizing a remote SWARM Server. Local functionality has been turned off!")
+            self._local = False
+
     # =========================================================================
     #                       Core Message Functions
     # =========================================================================
@@ -1532,6 +1585,7 @@ class SWARM():
     def run_simulation(self,
                        map_name: str,
                        sim_name: str,
+                       ip_address: str,
                        folder: str = "settings") -> bool:
         """
         Run a Simulation, waiting for the server to tell us when it has
@@ -1550,6 +1604,7 @@ class SWARM():
         """
         try:
             # Only connect once we are ready to send a command
+            self._determine_local_simulation(ip_address)
 
             settings, trajectory = self.retrieve_sim_package(
                 sim_name, folder=folder)
@@ -1561,6 +1616,7 @@ class SWARM():
                 exit(1)
 
             user_settings = json.loads(settings)
+            # TODO Set up a list of scenarios that require a trajectory
             if user_settings["Scenario"]["Name"] == "DataCollection":
                 trajectory_valid = self.validate_multi_level_trajectory_file(
                     json.loads(trajectory))
@@ -1573,13 +1629,16 @@ class SWARM():
 
             user_code = self.client.load_user_code(json.loads(settings))
 
+            # Always add the IP address so the server knows if we are
+            # local or not
             message = {
                 "Command": "Run Simulation",
                 "Settings": settings,
                 "Trajectory": trajectory,
                 "UserCode": user_code,
                 "Sim_name": sim_name,
-                "Map_name": map_name
+                "Map_name": map_name,
+                "IPAddress": ip_address
             }
             self.client.connect()
             # Give the client time to establish the connection
