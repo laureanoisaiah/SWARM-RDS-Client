@@ -13,4 +13,4 @@ else
     mkdir .cache
 fi
 
-docker run -it --rm --gpus=all --runtime=nvidia --network=host -v $pwd/.cache:/home/airsim_user/SWARMCore/core/.cache $1
+docker run -it --rm --gpus=all --runtime=nvidia --network=host -e "ROS_IP_ADDRESS=$2" -v $pwd/.cache:/home/airsim_user/SWARMCore/core/.cache $1
