@@ -1616,6 +1616,7 @@ class SWARM():
                 exit(1)
 
             user_settings = json.loads(settings)
+            # TODO Set up a list of scenarios that require a trajectory
             if user_settings["Scenario"]["Name"] == "DataCollection":
                 trajectory_valid = self.validate_multi_level_trajectory_file(
                     json.loads(trajectory))
@@ -1628,13 +1629,16 @@ class SWARM():
 
             user_code = self.client.load_user_code(json.loads(settings))
 
+            # Always add the IP address so the server knows if we are
+            # local or not
             message = {
                 "Command": "Run Simulation",
                 "Settings": settings,
                 "Trajectory": trajectory,
                 "UserCode": user_code,
                 "Sim_name": sim_name,
-                "Map_name": map_name
+                "Map_name": map_name,
+                "IPAddress": ip_address
             }
             self.client.connect()
             # Give the client time to establish the connection
