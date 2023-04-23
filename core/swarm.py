@@ -12,6 +12,7 @@ import datetime
 import os
 import glob
 import time
+import ipaddress
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
@@ -769,7 +770,7 @@ class SWARM():
                             elif section_name == "VehicleOptions":
                                 if not isinstance(section, dict):
                                     raise AssertionError("Error!\n Section VehicleOptions must be a dictionary!\nYour input was of type: {}".format(type(section).__name__))
-                                valid_options = ["RunROSNode", "UseLocalPX4", "PlanningCoordinateFrame"]
+                                valid_options = ["RunROSNode", "UseLocalPX4", "PlanningCoordinateFrame", "LocalHostIP"]
                                 for option_key, option_value in section.items():
                                     if option_key not in valid_options:
                                         raise AssertionError("Error!\nOption {} for Vehicle Options for agent {} is not in the list of valid options!".format(option_key, agent))
@@ -786,6 +787,14 @@ class SWARM():
                                     if option_key == "UseLocalPX4":
                                         if not isinstance(section[option_key], bool):
                                             raise AssertionError("Error!\nOption {} must be of type bool.\nYour input was of type {}".format(option_key, type(option_value).__name__))
+                                    if option_key == "LocalHostIP":
+                                        if not isinstance(option_value, str):
+                                            raise AssertionError("Error!\n\nLoclHostIP must be of type str. \nYour input was of type {}".format(type(option_value).__name__))
+                                        try:
+                                            ipaddress.ip_address(option_value)
+                                            print("Provided IP address has been validated!")
+                                        except ValueError:
+                                            raise AssertionError("Error!\n\nThe provided IP address is not a valid IPV4 address!\nYour input was: {}".format(option_value))
                             elif section_name == "StartingPosition":
                                 if "X" not in section.keys() or "Y" not in section.keys() or "Z" not in section.keys():
                                     raise AssertionError(

@@ -32,7 +32,8 @@
             "VehicleOptions": {
                 "UseLocalPX4": true,
                 "RunROSNode": true,
-                "PlanningCoordinateFrame": "ENU"
+                "PlanningCoordinateFrame": "ENU",
+                "LocalHostIP": "127.0.0.1"
             },
             "AutoPilot": "PX4",
             "Sensors": {
