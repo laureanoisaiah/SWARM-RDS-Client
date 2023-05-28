@@ -25,7 +25,8 @@
             "VideoRecorder",
             "Mapping",
             "TorchPerception",
-            "Perception"
+            "Perception",
+            "SensorDataCollector"
         ],
         "ValidMessageTypes": [
             "MovementCommand",
@@ -45,6 +46,9 @@
         ],
         "ValidCustomModelModules": [
             "TorchPerception"
+        ],
+        "ValidNoAlgorithmModules": [
+            "SensorDataCollector"
         ],
         "Mapping": {
             "ValidClassNames": [
@@ -298,6 +302,29 @@
                 "VideoRecorder": []
             }
         },
+        "SensorDataCollector": {
+            "ValidClassNames": [
+                "SensorDataCollector"
+            ],
+            "ValidParameters": {
+                "SensorDataCollector": {}
+            },
+            "ValidInputArgs": {
+                "SensorDataCollector": []
+            },
+            "ValidReturnValues": {
+                "SensorDataCollector": []
+            },
+            "ValidModuleParameters": {
+                "OutputType": {
+                    "type": "str",
+                    "description": "The format of the data collected by the Sensor Data Collector node.",
+                    "valid_entries": [
+                        "csv"
+                    ]
+                }
+            }
+        },
         "Detector": {
             "ValidClassNames": [
                 "SWARMDetector"
@@ -354,7 +381,7 @@
             ],
             "ValidParameters": {
                 "TorchHubModel": {
-                    "algorithm_type": {
+                    "model_type": {
                         "type": "str",
                         "description": "The type of Computer Vision model that the system is",
                         "valid_entries": [
