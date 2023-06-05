@@ -449,8 +449,10 @@ class SWARM():
             settings = submission_list["Submissions"][sim_name]["Settings"]
             trajectory = submission_list["Submissions"][sim_name]["Trajectory"]
         except KeyError:
+            traceback.print_exc()
             print("{} doesn't exist in the submission list! Please try a different name!".format(
                 sim_name))
+            return {}, {}
 
         return settings, trajectory
 
@@ -1171,7 +1173,6 @@ class SWARM():
                                                     "Gain {} for controller for {} must be between 0.0 and 20.0!".format(gain_key, agent))
                             elif section_name == "SoftwareModules":
                                 self.validate_software_modules(section, agent, settings_file["Agents"][agent]["Sensors"])
-                print("Section {} is valid!".format(key))
             return True
         except Exception as error:
 
@@ -1311,22 +1312,33 @@ class SWARM():
         with open("core/SupportedSoftwareModules.json", "r") as file:
             supported_modules = json.load(file)
         supported_modules = supported_modules["SupportedModules"]
+        no_algo_modules = supported_modules["ValidNoAlgorithmModules"]
+
+        print("Modules allowed without Algorithms: {}".format(no_algo_modules))
+
         for module_name, settings in modules.items():
             if module_name not in supported_modules.keys():
                 raise AssertionError("{} module for agent {} is not supported!\nValid modules are {}".format(
                     module_name, agent_name, supported_modules.keys()))
-            algo_level = settings["Algorithm"]["Level"]
-            if not isinstance(algo_level, int) or not (algo_level in [1, 2, 3]):
-                raise AssertionError("Level parameter for {} is invalid.\nValid options are {}\n Your Input: {}".format(
-                    module_name, [1, 2, 3], algo_level))
-            if algo_level == 3:
-                print("Processing Custom User Algorithm. Continuing...")
-                continue
-            valid_class_names = supported_modules[module_name]["ValidClassNames"]
-            class_name = settings["Algorithm"]["ClassName"]
-            if class_name not in valid_class_names:
-                raise AssertionError("Class name {} for {} is invalid.\nValid options are {}".format(
-                    class_name, module_name, valid_class_names))
+            
+            # If the Module contains algorithm parameters
+            if module_name not in no_algo_modules:
+                if "Algorithm" not in settings.keys():
+                    raise AssertionError("Error!\n\nYou must provide an Algorithm section for {} module!".format(module_name))
+                if "Level" not in settings["Algorithm"].keys():
+                    raise AssertionError("Error!\n\nYou must provide an Level section for {} module and provide an integer number between 1 and 3!".format(module_name))
+                algo_level = settings["Algorithm"]["Level"]
+                if not isinstance(algo_level, int) or not (algo_level in [1, 2, 3]):
+                    raise AssertionError("Level parameter for {} is invalid.\nValid options are {}\n Your Input: {}".format(
+                        module_name, [1, 2, 3], algo_level))
+                if algo_level == 3:
+                    print("Processing Custom User Algorithm. Continuing...")
+                    continue
+                valid_class_names = supported_modules[module_name]["ValidClassNames"]
+                class_name = settings["Algorithm"]["ClassName"]
+                if class_name not in valid_class_names:
+                    raise AssertionError("Class name {} for {} is invalid.\nValid options are {}".format(
+                        class_name, module_name, valid_class_names))
             for setting_name, setting in settings.items():
                 if setting_name not in supported_modules["ValidModuleParameters"]:
                     raise AssertionError("Invalid Module paramter in {}!\n Valid options are {}.".format(
@@ -1393,7 +1405,6 @@ class SWARM():
                                         raise AssertionError("Parameter {} for {} is not in a valid range.\nValid options are {}\nYour Input: {}".format(
                                             param_name, module_name, valid_params[param_name]["range"], value))
                         elif algo_setting_name == "InputArgs":
-                            print(algo_setting, algo_setting_name)
                             valid_args = supported_modules[module_name]["ValidInputArgs"][class_name]
                             for value in algo_setting:
                                 if not value in valid_args:
@@ -1618,6 +1629,9 @@ class SWARM():
 
             settings, trajectory = self.retrieve_sim_package(
                 sim_name, folder=folder)
+
+            if not isinstance(settings, str):
+                assert AssertionError("Error!\n\n Settings file has been provided in the wrong data format!")
 
             settings_valid = self.validate_settings_file(json.loads(settings))
             if not settings_valid:
