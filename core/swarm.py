@@ -1356,6 +1356,7 @@ class SWARM():
                                     if param_name == "camera_name":
                                         self.validate_camera_stream_settings(value, sensors, module_name)
                                         self._validate_camera_subscription(value, module_name, settings)
+                                    print(valid_params[param_name], param_name)
                                     if len(valid_params[param_name]["valid_entries"]) > 0 and valid_params[param_name]["valid_entries"][0] == "*":
                                         continue
                                     if not value in valid_params[param_name]["valid_entries"]:
@@ -1368,7 +1369,7 @@ class SWARM():
                                     for item in value:
                                         if not type(item).__name__ == valid_params[param_name]["field_data_type"]:
                                             raise AssertionError("Key {} for Parameter {} for {} is an invalid type.\nValid options are {}\nYour Input: {}".format(
-                                                key, param_name, module_name, valid_params[param_name]["field_data_type"], type(value).__name__))
+                                                param_name, param_name, module_name, valid_params[param_name]["field_data_type"], type(value).__name__))
                                         if type(item).__name__ == "float" or type(item).__name__ == "int":
                                             if (item < valid_params[param_name]["field_range"][0] or item > valid_params[param_name]["field_range"][1]):
                                                 raise AssertionError("Parameter {} for {} is not in a valid range.\nValid options are {}\nYour Input: {}".format(
@@ -1377,9 +1378,9 @@ class SWARM():
                                     for key, item in value.items():
                                         if len(valid_params[param_name]["valid_fields"]) > 0 and valid_params[param_name]["valid_fields"][-1] == "*":
                                             continue
-                                        if item not in valid_params[param_name]["valid_fields"]:
+                                        if key not in valid_params[param_name]["valid_fields"]:
                                             raise AssertionError("Key {} for Parameter {} is invalid.\nValid options are {}\nYour Input: {}".format(
-                                                key, param_name, module_name, valid_params[param_name]["valid_fields"], key))
+                                                key, param_name, valid_params[param_name]["valid_fields"], item))
                                         if not type(item).__name__ == valid_params[param_name]["field_data_type"]:
                                             raise AssertionError("Key {} for Parameter {} for {} is an invalid type.\nValid options are {}\nYour Input: {}".format(
                                                 key, param_name, module_name, valid_params[param_name]["field_data_type"], type(value).__name__))

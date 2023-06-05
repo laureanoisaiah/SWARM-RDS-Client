@@ -55,7 +55,7 @@
                     "Type": {
                         "type": "str",
                         "description": "The Type of Map to Display",
-                        "options": [
+                        "valid_entries": [
                             "OccupancyMap"
                         ]
                     },

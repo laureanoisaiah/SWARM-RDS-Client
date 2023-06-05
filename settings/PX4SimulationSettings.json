@@ -33,7 +33,7 @@
                 "UseLocalPX4": true,
                 "RunROSNode": true,
                 "PlanningCoordinateFrame": "ENU",
-                "LocalHostIP": "127.0.0.1"
+                "LocalHostIP": "10.8.0.1"
             },
             "AutoPilot": "PX4",
             "Sensors": {
