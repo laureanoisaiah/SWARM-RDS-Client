@@ -75,7 +75,7 @@ Once you have moved said file, please create a directory in that same place call
 permissions on this folder with `chmod 777 .cache`. This cache allows a small cache to be stored for license keys
 and certain metadata that is required to run the system.
   
-## Running A Simulation - Local
+## Running A Simulation with the Simulator Installed on your Machine
 To begin, if you have a local installation of the SWARM Developer system, you
 will be able to quickly get started.
   
@@ -94,7 +94,7 @@ To view the visuals, go to any web browser on the same computer and type in `127
 is running. Click `Start` and you will now have an interactive simulation, where you can fly around (hit the `m` key and use the arrow keys) 
 and you can also open or close doors (hit the `o` key) and turn on the lights (hit the `l` key).
 
-## Running A Simulation - Cloud
+## Running A Simulation with a SWARM Cloud Server
 Get started in the cloud is even easier. Just ensure that you have this repository
 downloaded.
   

@@ -11,8 +11,8 @@ import traceback
 import datetime
 import os
 import glob
-import time
 import ipaddress
+import time
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
@@ -21,7 +21,6 @@ from uuid import uuid4
 from core.client import SWARMClient
 from utilities.date_utils import convert_datetime_to_str
 from utilities.settings_utils import receive_user_input, generate_new_user_settings_file
-from utilities.constants import CAMERA_SETTINGS_DEFAULTS
 
 
 class SWARM():
@@ -395,6 +394,9 @@ class SWARM():
         settings = self.read_json_file(settings_file_name)
         settings = self.add_simulation_name_to_settings(
             sim_name, settings, settings_file_name)
+        settings = self._update_all_sensor_settings(
+            settings, settings_file_name
+        )
         trajectory = self.read_json_file(trajectory_file_name)
         return settings, trajectory
 
@@ -407,12 +409,47 @@ class SWARM():
         """
         settings = json.loads(settings)
         settings["SimulationName"] = sim_name
-        print(settings)
-        print(settings_file_name)
         with open("{}".format(settings_file_name), "w") as file:
             json.dump(settings, file)
         settings = json.dumps(settings)
         return settings
+
+    def _update_all_sensor_settings(self, settings: dict, settings_file_name: str) -> str:
+        """
+        Update and fill in all Sensor Settings that aren't provided,
+        so we show the user what is possible but don't need to
+        validate the settings just yet.
+
+        ### Inputs:
+        - settings [dict] The User settings file
+
+        ### Outputs:
+        - The updated settings files as a JSON string
+        """
+        valid_sensor_info = self._retrieve_valid_sensor_info()
+
+        settings = json.loads(settings)
+
+        # If they have provided agents
+        if "Agents" in settings.keys():
+            for agent_name, agent_info in settings["Agents"].items():
+                # If they attached sensors to an agent
+                if "Sensors" in agent_info.keys():
+                    for sensor_type_name, sensors in agent_info["Sensors"].items():
+                        # If the sensor is a GPS or IMU device
+                        if sensor_type_name == "GPS" or sensor_type_name == "IMU":
+                            for sensor_name, sensor_info in sensors.items():
+                                # Go through each device, determining if the User included these parameters
+                                for param_name, param_info in valid_sensor_info[sensor_type_name]["Parameters"].items():
+                                    if param_name not in sensor_info.keys():
+                                        settings["Agents"][agent_name]["Sensors"][sensor_type_name][sensor_name][param_name] = param_info["Default"]
+
+        with open("{}".format(settings_file_name), "w") as file:
+            json.dump(settings, file)
+        settings = json.dumps(settings)
+        return settings
+
+
 
     def read_json_file(self, file_name: str) -> str:
         """
@@ -659,7 +696,8 @@ class SWARM():
                         print(error)
                         return False
                 elif key == "Environment":
-                    valid_keys = ['Name', 'StreamVideo', 'StartingLevelName', 'Options']
+                    valid_keys = ['Name', 'StreamVideo',
+                                  'StartingLevelName', 'Options']
                     try:
                         if not "Name" in list(options.keys()):
                             raise AssertionError(
@@ -728,12 +766,14 @@ class SWARM():
                                 camera_names = list()
                                 for agent_name, agent_options in settings_file["Agents"].items():
                                     if "Cameras" not in agent_options["Sensors"].keys():
-                                        raise AssertionError("Error!\n\nYou must add a Cameras section to your settings to record video!")
+                                        raise AssertionError(
+                                            "Error!\n\nYou must add a Cameras section to your settings to record video!")
                                     for camera_name in agent_options["Sensors"]["Cameras"].keys():
                                         if camera_name not in camera_names:
                                             camera_names.append(camera_name)
                                 if options["Video"]["CameraName"] not in camera_names:
-                                    raise AssertionError("Error!\n\nNo Agent in your settings has a camera with name: {}\nPlease correct this by adding a Camera with that name!!".format(options["Video"]["CameraName"]))
+                                    raise AssertionError("Error!\n\nNo Agent in your settings has a camera with name: {}\nPlease correct this by adding a Camera with that name!!".format(
+                                        options["Video"]["CameraName"]))
                     except AssertionError as error:
                         print(error)
                         return False
@@ -771,32 +811,43 @@ class SWARM():
                                         "Vehicle parameter must be Multirotor. Support for different vehicle types coming soon!")
                             elif section_name == "VehicleOptions":
                                 if not isinstance(section, dict):
-                                    raise AssertionError("Error!\n Section VehicleOptions must be a dictionary!\nYour input was of type: {}".format(type(section).__name__))
-                                valid_options = ["RunROSNode", "UseLocalPX4", "PlanningCoordinateFrame", "LocalHostIP"]
+                                    raise AssertionError("Error!\n Section VehicleOptions must be a dictionary!\nYour input was of type: {}".format(
+                                        type(section).__name__))
+                                valid_options = [
+                                    "RunROSNode", "UseLocalPX4", "PlanningCoordinateFrame", "LocalHostIP"]
                                 for option_key, option_value in section.items():
                                     if option_key not in valid_options:
-                                        raise AssertionError("Error!\nOption {} for Vehicle Options for agent {} is not in the list of valid options!".format(option_key, agent))
+                                        raise AssertionError(
+                                            "Error!\nOption {} for Vehicle Options for agent {} is not in the list of valid options!".format(option_key, agent))
                                     if option_key == "RunROSNode":
                                         if not isinstance(section[option_key], bool):
-                                            raise AssertionError("Error!\nOption {} must be of type bool.\nYour input was of type {}".format(option_key, type(option_value).__name__))
+                                            raise AssertionError("Error!\nOption {} must be of type bool.\nYour input was of type {}".format(
+                                                option_key, type(option_value).__name__))
                                         if "PlanningCoordinateFrame" not in section.keys():
-                                            raise AssertionError("Error!\nOption 'PlanningCoordinateFrame' must be included if you are running ROS. Options are NED and ENU.")
+                                            raise AssertionError(
+                                                "Error!\nOption 'PlanningCoordinateFrame' must be included if you are running ROS. Options are NED and ENU.")
                                     if option_key == "PlanningCoordinateFrame":
                                         if not isinstance(section[option_key], str):
-                                            raise AssertionError("Error!\nOption {} must be of type string.\nYour input was of type {}".format(option_key, type(option_value).__name__))
+                                            raise AssertionError("Error!\nOption {} must be of type string.\nYour input was of type {}".format(
+                                                option_key, type(option_value).__name__))
                                         if section[option_key] not in ["NED", "ENU"]:
-                                            raise AssertionError("Error for agent {}!\nOption 'PlanningCoordinateFrame' can only be NED and ENU.".format(agent))
+                                            raise AssertionError(
+                                                "Error for agent {}!\nOption 'PlanningCoordinateFrame' can only be NED and ENU.".format(agent))
                                     if option_key == "UseLocalPX4":
                                         if not isinstance(section[option_key], bool):
-                                            raise AssertionError("Error!\nOption {} must be of type bool.\nYour input was of type {}".format(option_key, type(option_value).__name__))
+                                            raise AssertionError("Error!\nOption {} must be of type bool.\nYour input was of type {}".format(
+                                                option_key, type(option_value).__name__))
                                     if option_key == "LocalHostIP":
                                         if not isinstance(option_value, str):
-                                            raise AssertionError("Error!\n\nLoclHostIP must be of type str. \nYour input was of type {}".format(type(option_value).__name__))
+                                            raise AssertionError("Error!\n\nLoclHostIP must be of type str. \nYour input was of type {}".format(
+                                                type(option_value).__name__))
                                         try:
                                             ipaddress.ip_address(option_value)
-                                            print("Provided IP address has been validated!")
+                                            print(
+                                                "Provided IP address has been validated!")
                                         except ValueError:
-                                            raise AssertionError("Error!\n\nThe provided IP address is not a valid IPV4 address!\nYour input was: {}".format(option_value))
+                                            raise AssertionError(
+                                                "Error!\n\nThe provided IP address is not a valid IPV4 address!\nYour input was: {}".format(option_value))
                             elif section_name == "StartingPosition":
                                 if "X" not in section.keys() or "Y" not in section.keys() or "Z" not in section.keys():
                                     raise AssertionError(
@@ -804,355 +855,19 @@ class SWARM():
                                 for key, pos in section.items():
                                     if type(pos).__name__ != "float":
                                         raise AssertionError(
-                                            "\n\n Error for Agent {}!\n{} must be of type float!\nYour Input: {}".format(agent, pos))
+                                            "\n\n Error for Agent {}!\n{} must be of type float!\nYour Input: {}".format(agent, key, pos))
                                     if pos > 999.0 or pos < -999.0:
                                         raise AssertionError(
-                                            "\n\n Error for Agent {}!\n{} must be of type within -999.0 and 999.0 meters!\nYour Input: {}".format(agent, pos))
+                                            "\n\n Error for Agent {}!\n{} must be of type within -999.0 and 999.0 meters!\nYour Input: {}".format(agent, key, pos))
                             elif section_name == "AutoPilot":
                                 if not section == "SWARM" and not section == "PX4":
                                     raise AssertionError(
                                         "Autopilot parameter must be SWARM or PX4. Support for different autopilots, including PX4/Ardupilot coming in February 2023!")
                             elif section_name == "Sensors":
-                                valid_sensor_types = ["Cameras", "LiDAR", "IMU", "GPS", "Barometers", "AirSpeed", "Odometers", "Magnetometers", "Distance"]
-                                if settings_file["Agents"][agent]["AutoPilot"] == "PX4":
-                                    listed_sensors = settings_file["Agents"][agent]["Sensors"]
-                                    print(listed_sensors.keys())
-                                    if not "IMU" in listed_sensors.keys() or not "Magnetometers" in listed_sensors.keys() or not "Barometers" in listed_sensors.keys():
-                                        raise AssertionError("Error! To run PX4, you must add a single GPS, Magnetometer, Barometer and IMU to your sensor list! Please see the Examples folder for an example settings file!")
-                                for sensor_type, sensor_settings in section.items():
-                                    if sensor_type not in valid_sensor_types:
-                                        raise AssertionError(
-                                            "{} is not a supported sensor in SWARM. Please contact Codex Labs to request support for this sensor!".format(sensor_type))
-                                    if sensor_type == "Cameras":
-                                        for camera_name, camera_options in sensor_settings.items():
-                                            print("Validating camera {}".format(
-                                                camera_name))
-                                            if len(section["Cameras"].keys()) < 1:
-                                                raise AssertionError(
-                                                    "You must have at least 1 camera in this section!")
-                                            valid_camera_sections = [
-                                                "Enabled", "PublishPose", "X", "Y", "Z", "Settings", "Roll", "Pitch", "Yaw"]
-                                            valid_camera_sections.sort()
-                                            sensor_settings_sections = list(
-                                                camera_options.keys())
-                                            sensor_settings_sections.sort()
-                                            if sensor_settings_sections != valid_camera_sections:
-                                                # print("Warning! Default sections for camera {} are being set! Your Sections: {}\nRequired Sections: {}".format(camera_name, sensor_settings_sections, valid_camera_sections))
-                                                # diff_fields = [def_option for def_option, user_option in zip(valid_camera_sections, sensor_settings_sections) if (def_option not in user_option)]
-                                                # for field in diff_fields:
-                                                #     settings_file["Agents"][agent]["Sensors"]["Cameras"][camera_name][field] = CAMERA_SETTINGS_DEFAULTS[field]
-                                                # camera_options = settings_file["Agents"][agent]["Sensors"]["Cameras"][camera_name]
-                                                raise AssertionError("Error!\n{} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
-                                                    camera_name, sensor_settings_sections, valid_camera_sections))
-                                            for sensor_setting_key, sensor_setting in camera_options.items():
-                                                if sensor_setting_key == "X" or sensor_setting_key == "Y" or sensor_setting_key == "Z":
-                                                    # TODO We need to define these bounds somewhere relative to the environment
-                                                    if not isinstance(sensor_setting, float) or (sensor_setting < -50.0 or sensor_setting > 50.0):
-                                                        raise AssertionError(
-                                                            "{} for {} is not a float value within -50.0 and 50.0".format(sensor_setting_key, agent))
-                                                if sensor_setting_key == "Yaw" or sensor_setting_key == "Pitch" or sensor_setting_key == "Roll":
-                                                    # TODO We need to define these bounds somewhere relative to the environment
-                                                    if not isinstance(sensor_setting, float) or (sensor_setting < -360.0 or sensor_setting > 360.0):
-                                                        raise AssertionError(
-                                                            "{} for {} is not a float value within -360.0 and 360.0 degrees!".format(sensor_setting_key, agent))
-                                                elif sensor_setting_key == "Settings":
-                                                    valid_camera_setting_sections = [
-                                                        "ImageType", "Width", "Height", "FOV_Degrees", "FramesPerSecond"]
-                                                    user_camera_setting_sections = list(
-                                                        sensor_setting.keys())
-                                                    valid_camera_setting_sections.sort()
-                                                    user_camera_setting_sections.sort()
-                                                    if (user_camera_setting_sections != valid_camera_setting_sections):
-                                                        raise AssertionError("Camera {} for agent {} settings are invalid.\nYour sensor settings section: {}\nValid sensor setting section: {}".format(
-                                                            camera_name, agent, user_camera_setting_sections, valid_camera_setting_sections))
-                                                    for camera_setting_key, camera_setting in sensor_setting.items():
-                                                        if not camera_setting_key == "ImageType":
-                                                            if not isinstance(camera_setting, float) and not isinstance(camera_setting, int):
-                                                                raise AssertionError("Camera {} for agent {} {} parameter must be of type Float or type Int!\nYour input: {}".format(
-                                                                        camera_name, agent, camera_setting_key, type(camera_setting).__name__))
-                                                        if camera_setting_key == "Width":
-                                                            if float(camera_setting) > 1280.0 or float(camera_setting) < 640.0:
-                                                                raise AssertionError("Camera {} for agent {} width parameter must be between 640 and 1280!\nYour input: {}".format(
-                                                                    camera_name, agent, camera_setting))
-                                                        elif camera_setting_key == "Height":
-                                                            if float(camera_setting) > 720.0 or float(camera_setting) < 480.0:
-                                                                raise AssertionError("Camera {} for agent {} width parameter must be between 640 and 1280!\nYour input: {}".format(
-                                                                    camera_name, agent, camera_setting))
-                                                        elif camera_setting_key == "FOV_Degrees":
-                                                            if float(camera_setting) > 180.0 or float(camera_setting) < 10.0:
-                                                                raise AssertionError("Camera {} for agent {} FOV parameter must be between 10.0 and 180.0 Degrees!\nYour input: {}".format(
-                                                                    camera_name, agent, camera_setting))
-                                                        elif camera_setting_key == "FramesPerSecond":
-                                                            if float(camera_setting) > 30.0 or float(camera_setting) < 1.0:
-                                                                raise AssertionError("Camera {} for agent {} Frames Per Second parameter must be between 1.0 and 30.0 Frames!\nYour input: {}".format(
-                                                                    camera_name, agent, camera_setting))
-                                                        elif camera_setting_key == "ImageType":
-                                                            if not isinstance(camera_setting, str):
-                                                                raise AssertionError("Camera {} for agent {} {} parameter must be of type String!\nYour input: {}".format(
-                                                                        camera_name, agent, camera_setting_key, type(camera_setting).__name__))
-                                                            if camera_setting not in ["Scene", "Segmentation", "Depth"]:
-                                                                raise AssertionError("Camera {} for agent {} {} parameter is not valid. Must be either Scene or Depth!\nYour input: {}".format(
-                                                                        camera_name, agent, camera_setting_key, type(camera_setting).__name__))
-
-                                    elif sensor_type == "Barometers":
-                                        for baro_name, baro_options in sensor_settings.items():
-                                            print("Validating Barometer {}".format(
-                                                baro_name))
-                                            if len(section["Barometers"].keys()) < 1:
-                                                raise AssertionError(
-                                                    "You must have at least 1 Barometer in this section!")
-                                            valid_baro_sections = [
-                                                "Enabled", "Method", "PublishingRate"]
-                                            valid_baro_sections.sort()
-                                            sensor_settings_sections = list(
-                                                baro_options.keys())
-                                            sensor_settings_sections.sort()
-                                            if sensor_settings_sections != valid_baro_sections:
-                                                raise AssertionError("Error!\n\nBarometer Sensor {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
-                                                    baro_name, sensor_settings_sections, valid_baro_sections))
-                                            for sensor_setting_key, sensor_setting in baro_options.items():
-                                                if sensor_setting_key == "Method":
-                                                    if not isinstance(sensor_setting, str) or sensor_setting not in ["Colosseum"]:
-                                                        raise AssertionError("Error!\n\nBarometer {} parameter Method was invalid! The method must be a string\nValid options are: Colosseum")
-                                                if sensor_setting_key == "Eabled":
-                                                    if not isinstance(sensor_setting, bool):
-                                                        raise AssertionError("Error!\n\nBarometer {} parameter Enabled was invalid! The method must be a boolean value!")
-                                                if sensor_setting_key == "PublishingRate":
-                                                    self.validate_publishing_Rate("Barometer", baro_name, sensor_setting, 1.0, 20.0)
-                                    elif sensor_type == "Odometers":
-                                        for odom_name, odom_options in sensor_settings.items():
-                                            print("Validating Odometer {}".format(
-                                                odom_name))
-                                            if len(section["Odometers"].keys()) < 1:
-                                                raise AssertionError(
-                                                    "You must have at least 1 Odometer in this section!")
-                                            valid_odom_sections = [
-                                                "Enabled", "Method", "PublishingRate"]
-                                            valid_odom_sections.sort()
-                                            sensor_settings_sections = list(
-                                                odom_options.keys())
-                                            sensor_settings_sections.sort()
-                                            if sensor_settings_sections != valid_odom_sections:
-                                                raise AssertionError("Error!\n\nOdometer Sensor {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
-                                                    odom_name, sensor_settings_sections, valid_odom_sections))
-                                            for sensor_setting_key, sensor_setting in odom_options.items():
-                                                if sensor_setting_key == "Method":
-                                                    if not isinstance(sensor_setting, str) or sensor_setting not in ["Colosseum"]:
-                                                        raise AssertionError("Error!\n\nOdometer {} parameter Method was invalid! The method must be a string\nValid options are: Colosseum")
-                                                if sensor_setting_key == "Eabled":
-                                                    if not isinstance(sensor_setting, bool):
-                                                        raise AssertionError("Error!\n\nOdometer {} parameter Enabled was invalid! The method must be a boolean value!")
-                                                if sensor_setting_key == "PublishingRate":
-                                                    self.validate_publishing_Rate("Odometer", baro_name, sensor_setting, 1.0, 50.0)
-                                    elif sensor_type == "Magnetometers":
-                                        for mag_name, mag_options in sensor_settings.items():
-                                            print("Validating Magnetometer {}".format(
-                                                mag_name))
-                                            if len(section["Magnetometers"].keys()) < 1:
-                                                raise AssertionError(
-                                                    "You must have at least 1 Magnetometer in this section!")
-                                            valid_mag_sections = [
-                                                "Enabled", "Method", "PublishingRate"]
-                                            valid_mag_sections.sort()
-                                            sensor_settings_sections = list(
-                                                mag_options.keys())
-                                            sensor_settings_sections.sort()
-                                            if sensor_settings_sections != valid_mag_sections:
-                                                raise AssertionError("Error!\n\nMagnetometer Sensor {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
-                                                    mag_name, sensor_settings_sections, valid_mag_sections))
-                                            for sensor_setting_key, sensor_setting in mag_options.items():
-                                                if sensor_setting_key == "Method":
-                                                    if not isinstance(sensor_setting, str) or sensor_setting not in ["Colosseum"]:
-                                                        raise AssertionError("Error!\n\nMagnetometer {} parameter Method was invalid! The method must be a string\nValid options are: Colosseum")
-                                                if sensor_setting_key == "Eabled":
-                                                    if not isinstance(sensor_setting, bool):
-                                                        raise AssertionError("Error!\n\nMagnetometer {} parameter Enabled was invalid! The method must be a boolean value!")
-                                                if sensor_setting_key == "PublishingRate":
-                                                    self.validate_publishing_Rate("Magnetometer", mag_name, sensor_setting, 1.0, 20.0)
-                                    elif sensor_type == "GPS":
-                                        for gps_name, gps_options in sensor_settings.items():
-                                            print("Validating GPS {}".format(
-                                                gps_name))
-                                            if len(section["GPS"].keys()) < 1:
-                                                raise AssertionError(
-                                                    "You must have at least 1 GPS in this section!")
-                                            valid_gps_sections = [
-                                                "Enabled", "Method", "PublishingRate"]
-                                            valid_gps_sections.sort()
-                                            sensor_settings_sections = list(
-                                                gps_options.keys())
-                                            sensor_settings_sections.sort()
-                                            if sensor_settings_sections != valid_gps_sections:
-                                                raise AssertionError("Error!\n\nGPS Sensor {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
-                                                    gps_name, sensor_settings_sections, valid_gps_sections))
-                                            for sensor_setting_key, sensor_setting in gps_options.items():
-                                                if sensor_setting_key == "Method":
-                                                    if not isinstance(sensor_setting, str) or sensor_setting not in ["Colosseum"]:
-                                                        raise AssertionError("Error!\n\nGPS {} parameter Method was invalid! The method must be a string\nValid options are: Colosseum")
-                                                if sensor_setting_key == "Eabled":
-                                                    if not isinstance(sensor_setting, bool):
-                                                        raise AssertionError("Error!\n\nGPS {} parameter Enabled was invalid! The method must be a boolean value!")
-                                                if sensor_setting_key == "PublishingRate":
-                                                    self.validate_publishing_Rate("GPS", gps_name, sensor_setting, 1.0, 20.0)
-                                    elif sensor_type == "AirSpeed":
-                                        for airspeed_name, airspeed_options in sensor_settings.items():
-                                            print("Validating AirSpeed {}".format(
-                                                airspeed_name))
-                                            if len(section["AirSpeed"].keys()) < 1:
-                                                raise AssertionError(
-                                                    "You must have at least 1 AirSpeed in this section!")
-                                            valid_airspeed_sections = [
-                                                "Enabled", "Method", "PublishingRate"]
-                                            valid_airspeed_sections.sort()
-                                            sensor_settings_sections = list(
-                                                airspeed_options.keys())
-                                            sensor_settings_sections.sort()
-                                            if sensor_settings_sections != valid_airspeed_sections:
-                                                raise AssertionError("Error!\n\nAirSpeed Sensor {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
-                                                    airspeed_name, sensor_settings_sections, valid_airspeed_sections))
-                                            for sensor_setting_key, sensor_setting in airspeed_options.items():
-                                                if sensor_setting_key == "Method":
-                                                    if not isinstance(sensor_setting, str) or sensor_setting not in ["Colosseum"]:
-                                                        raise AssertionError("Error!\n\nAirSpeed {} parameter Method was invalid! The method must be a string\nValid options are: Colosseum")
-                                                if sensor_setting_key == "Eabled":
-                                                    if not isinstance(sensor_setting, bool):
-                                                        raise AssertionError("Error!\n\nAirSpeed {} parameter Enabled was invalid! The method must be a boolean value!")
-                                                if sensor_setting_key == "PublishingRate":
-                                                    self.validate_publishing_Rate("AirSpeed", airspeed_name, sensor_setting, 1.0, 20.0)
-                                    elif sensor_type == "Distance":
-                                        for dist_name, dist_options in sensor_settings.items():
-                                            print("Validating Distance Sensor {}".format(
-                                                dist_name))
-                                            if len(section["Distance"].keys()) < 1:
-                                                raise AssertionError(
-                                                    "You must have at least 1 Distance Sensor in this section!")
-                                            valid_dist_sections = [
-                                                "Enabled", "Method", "X", "Y", "Z", "Roll", "Pitch", "Yaw", "PublishingRate", "MinDistance", "MaxDistance"]
-                                            valid_dist_sections.sort()
-                                            sensor_settings_sections = list(
-                                                dist_options.keys())
-                                            sensor_settings_sections.sort()
-                                            if sensor_settings_sections != valid_dist_sections:
-                                                raise AssertionError("Error!\n\nDistance Sensor {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
-                                                    dist_name, sensor_settings_sections, valid_dist_sections))
-                                            for sensor_setting_key, sensor_setting in dist_options.items():
-                                                if sensor_setting_key == "X" or sensor_setting_key == "Y" or sensor_setting_key == "Z":
-                                                    # TODO We need to define these bounds somewhere relative to the environment
-                                                    if not isinstance(sensor_setting, float) or (sensor_setting < -50.0 or sensor_setting > 50.0):
-                                                        raise AssertionError(
-                                                            "{} for {} is not a float value within -50.0 and 50.0".format(sensor_setting_key, agent))
-                                                if sensor_setting_key == "Yaw" or sensor_setting_key == "Pitch" or sensor_setting_key == "Roll":
-                                                    # TODO We need to define these bounds somewhere relative to the environment
-                                                    if not isinstance(sensor_setting, float) or (sensor_setting < -360.0 or sensor_setting > 360.0):
-                                                        raise AssertionError(
-                                                            "{} for {} is not a float value within -360.0 and 360.0 degrees!".format(sensor_setting_key, agent))
-                                                if sensor_setting_key == "MinDistance":
-                                                    if not isinstance(sensor_setting, float) or (sensor_setting < 0.2 or sensor_setting >= dist_options["MaxDistance"]):
-                                                        raise AssertionError(
-                                                            "Error!\n\n{} for {} is not a float value within 0.2 and {} meters".format(sensor_setting_key, agent, dist_options["MaxDistance"]))
-                                                if sensor_setting_key == "MaxDistance":
-                                                    if not isinstance(sensor_setting, float) or (sensor_setting > 1000.0 or sensor_setting <= dist_options["MinDistance"]):
-                                                        raise AssertionError(
-                                                            "Error!\n\n{} for {} is not a float value within {} and 1000.0 meters".format(sensor_setting_key, agent, dist_options["MinDistance"]))
-                                                if sensor_setting_key == "PublishingRate":
-                                                    self.validate_publishing_Rate("Distance Sesnor", dist_name, sensor_setting, 1.0, 20.0)
-                                    elif sensor_type == "IMU":
-                                        for imu_name, imu_options in sensor_settings.items():
-                                            print("Validating IMU {}".format(
-                                                imu_name))
-                                            if len(section["IMU"].keys()) < 1:
-                                                raise AssertionError(
-                                                    "You must have at least 1 IMU in this section!")
-                                            valid_imu_sections = [
-                                                "Enabled", "Method", "PublishingRate"]
-                                            valid_imu_sections.sort()
-                                            sensor_settings_sections = list(
-                                                imu_options.keys())
-                                            sensor_settings_sections.sort()
-                                            if sensor_settings_sections != valid_imu_sections:
-                                                raise AssertionError("Error!\n\nIMU Sensor {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
-                                                    imu_name, sensor_settings_sections, valid_imu_sections))
-                                            for sensor_setting_key, sensor_setting in imu_options.items():
-                                                if sensor_setting_key == "Method":
-                                                    if not isinstance(sensor_setting, str) or sensor_setting not in ["Colosseum"]:
-                                                        raise AssertionError("Error!\n\nIMU {} parameter Method was invalid! The method must be a string\nValid options are: Colosseum")
-                                                if sensor_setting_key == "Eabled":
-                                                    if not isinstance(sensor_setting, bool):
-                                                        raise AssertionError("Error!\n\nIMU {} parameter Enabled was invalid! The method must be a boolean value!")
-                                                if sensor_setting_key == "PublishingRate":
-                                                    self.validate_publishing_Rate("IMU", imu_name, sensor_setting, 1.0, 150.0)
-                                    elif sensor_type == "LiDAR":
-                                        for lidar_name, lidar_options in sensor_settings.items():
-                                            print("Validating lidar {}".format(
-                                                lidar_name))
-                                            if len(section["LiDAR"].keys()) < 1:
-                                                raise AssertionError(
-                                                    "You must have at least 1 LiDAR in this section!")
-                                            valid_lidar_sections = [
-                                                "Enabled", "Method", "X", "Y", "Z", "Settings", "Roll", "Pitch", "Yaw", "PublishingRate", "Hardware"]
-                                            valid_lidar_sections.sort()
-                                            sensor_settings_sections = list(
-                                                lidar_options.keys())
-                                            sensor_settings_sections.sort()
-                                            if sensor_settings_sections != valid_lidar_sections:
-                                                raise AssertionError("LiDAR {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
-                                                    lidar_name, sensor_settings_sections, valid_lidar_sections))
-                                            for sensor_setting_key, sensor_setting in lidar_options.items():
-                                                if sensor_setting_key == "X" or sensor_setting_key == "Y" or sensor_setting_key == "Z":
-                                                    # TODO We need to define these bounds somewhere relative to the environment
-                                                    if not isinstance(sensor_setting, float) or (sensor_setting < -50.0 or sensor_setting > 50.0):
-                                                        raise AssertionError(
-                                                            "{} for {} is not a float value within -50.0 and 50.0".format(sensor_setting_key, agent))
-                                                if sensor_setting_key == "Yaw" or sensor_setting_key == "Pitch" or sensor_setting_key == "Roll":
-                                                    # TODO We need to define these bounds somewhere relative to the environment
-                                                    if not isinstance(sensor_setting, float) or (sensor_setting < -360.0 or sensor_setting > 360.0):
-                                                        raise AssertionError(
-                                                            "{} for {} is not a float value within -360.0 and 360.0 degrees!".format(sensor_setting_key, agent))
-                                                if sensor_setting_key == "PublishingRate":
-                                                    self.validate_publishing_Rate("LiDAR", lidar_name, sensor_setting, 1.0, 30.0)
-                                                elif sensor_setting_key == "Settings":
-                                                    valid_lidar_setting_sections = [
-                                                        "Range", "NumberOfChannels", "RotationsPerSecond", "PointsPerSecond", "VerticalFOVUpper", "VerticalFOVLower", "HorizontalFOVStart", "HorizontalFOVEnd", "DataFrame"]
-                                                    for lidar_setting_key, lidar_setting in sensor_setting.items():
-                                                        if lidar_setting_key not in valid_lidar_setting_sections:
-                                                            raise AssertionError("LiDAR {} for agent {} settings are invalid.\nYour sensor settings section: {}\nValid sensor setting section: {}".format(
-                                                                lidar_name, agent, lidar_setting_key, valid_lidar_setting_sections))
-                                                        if lidar_setting_key != "DataFrame":
-                                                            if not isinstance(lidar_setting, float) and not isinstance(lidar_setting, int):
-                                                                raise AssertionError("LiDAR {} for agent {} {} parameter must be of type Float or type Int!\nYour input: {}".format(
-                                                                        lidar_name, agent, lidar_setting_key, type(lidar_setting).__name__))
-                                                        if lidar_setting_key == "Range":
-                                                            if float(lidar_setting) > 250.0 or float(lidar_setting) < 0.2:
-                                                                raise AssertionError("LiDAR {} for agent {} Range must be between 0.2 and 250.0 meters!\nYour input: {}".format(
-                                                                    lidar_name, agent, lidar_setting))
-                                                        elif lidar_setting_key == "NumberOfChannels":
-                                                            if lidar_setting > 6 or lidar_setting < 32:
-                                                                raise AssertionError("LiDAR {} for agent {} Number of Channels parameter must be between 6 and 20 channels!\nYour input: {}".format(
-                                                                    lidar_name, agent, lidar_setting))
-                                                        elif lidar_setting_key == "RotationsPerSecond":
-                                                            if int(lidar_setting) > 5 or int(lidar_setting) < 20:
-                                                                raise AssertionError("LiDAR {} for agent {} Rotations Per Second parameter must be between 5 and 20 Rotations!\nYour input: {}".format(
-                                                                    lidar_name, agent, lidar_setting))
-                                                        elif lidar_setting_key == "PointsPerSecond":
-                                                            if float(lidar_setting) > 1000000.0 or float(lidar_setting) < 10000.0:
-                                                                raise AssertionError("LiDAR {} for agent {} Points Per Second parameter must be between 10,000.0 and 1,000,000.0 Points per second!\nYour input: {}".format(
-                                                                    lidar_name, agent, lidar_setting))
-                                                        elif lidar_setting_key == "VerticalFOVUpper":
-                                                            if float(lidar_setting) > 90.0 or float(lidar_setting) < -85.0:
-                                                                raise AssertionError("LiDAR {} for agent {} VerticalFOVUpper parameter must be between -85.0 and 90.0 degrees!\nYour input: {}".format(
-                                                                    lidar_name, agent, lidar_setting))
-                                                        elif lidar_setting_key == "VerticalFOVLower":
-                                                            if float(lidar_setting) < -90.0 or float(lidar_setting) > 85.0:
-                                                                raise AssertionError("LiDAR {} for agent {} VerticalFOVLower parameter must be between 85.0 and -90.0 degrees!\nYour input: {}".format(
-                                                                    lidar_name, agent, lidar_setting))
-                                                        elif lidar_setting_key == "HorizontalFOVStart":
-                                                            if float(lidar_setting) > -5.0 or float(lidar_setting) < -60.0:
-                                                                raise AssertionError("LiDAR {} for agent {} VerticalFOVUpper parameter must be between -5.0 and -60.0 degrees!\nYour input: {}".format(
-                                                                    lidar_name, agent, lidar_setting))
-                                                        elif lidar_setting_key == "HorizontalFOVEnd":
-                                                            if float(lidar_setting) > 60.0 or float(lidar_setting) < 5.0:
-                                                                raise AssertionError("LiDAR {} for agent {} VerticalFOVUpper parameter must be between 5.0 and 60.0 degrees!\nYour input: {}".format(
-                                                                    lidar_name, agent, lidar_setting))
+                                self.validate_sensors(
+                                    section, settings_file["Agents"][agent]["AutoPilot"], agent_name=agent)
+                                # Update the broader file
+                                settings_file["Agents"][agent][section_name] = section
                             elif section_name == "Controller":
                                 valid_controller_sections = ["Name", "Gains"]
                                 for controller_section_name, controller_setting in section.items():
@@ -1172,13 +887,400 @@ class SWARM():
                                                 raise AssertionError(
                                                     "Gain {} for controller for {} must be between 0.0 and 20.0!".format(gain_key, agent))
                             elif section_name == "SoftwareModules":
-                                self.validate_software_modules(section, agent, settings_file["Agents"][agent]["Sensors"])
+                                self.validate_software_modules(
+                                    section, agent, settings_file["Agents"][agent]["Sensors"])
             return True
         except Exception as error:
 
             traceback.print_exc()
             print(error)
             return False
+
+    def _retrieve_valid_sensor_info(self) -> dict:
+        """
+        Retrieve the SupportedSensors JSON file
+        """
+        try:
+            with open("{}/core/SupportedSensors.json".format(os.getcwd()), "r") as file:
+                return json.load(file)
+        except FileNotFoundError:
+            raise AssertionError(
+                "Error!\nThe file 'SupportedSensors.json' was not found in the core folder of this client! Please make sure this file exists!")
+
+    def _validate_sensor_setting(self, sensor_name: str, sensor_setting_key: str, valid_sections: dict, sensor_setting: None, sensor_type: str):
+        """
+        Validate an individual sensor information
+        """
+        if sensor_setting_key not in valid_sections.keys():
+            raise AssertionError("Error!\n\n{} {} Parameter with key {} is not valid!".format(sensor_type,
+                sensor_name, sensor_setting_key))
+        valid_sensor_setting_info = valid_sections[sensor_setting_key]
+        if type(sensor_setting).__name__ != valid_sensor_setting_info["Type"]:
+            raise AssertionError("Error\n\n{} {} Parameter with key {} is an invalid type\nValid Type: {}\nYour Input: {}".format(sensor_type,
+                sensor_name, sensor_setting_key, type(sensor_setting).__name__, valid_sensor_setting_info["Type"]))
+
+        if type(sensor_setting) == float or type(sensor_setting) == int:
+            if sensor_setting < valid_sensor_setting_info["Range"][0] or sensor_setting > valid_sensor_setting_info["Range"][1]:
+                raise AssertionError("Error!\n\n{} {} Parameter with key {} is not within the valid range\nValid Range: {}\nYour Input: {}".format(sensor_type,
+                    sensor_name, sensor_setting_key, valid_sensor_setting_info["Range"], sensor_setting))
+        if type(sensor_setting) == str:
+            if sensor_setting not in valid_sensor_setting_info["ValidEntries"]:
+                raise AssertionError("Error!\n\n{} {} Parameter with key {} is not within the valid range\nValid Range: {}\nYour Input: {}".format(sensor_type,
+                    sensor_name, sensor_setting_key, valid_sensor_setting_info["ValidEntries"], sensor_setting))
+
+    def validate_sensors(self, sensor_settings_dict: dict, autopilot_type: str, agent_name: str) -> None:
+        """
+        Validate each sensor that has been added to the settings file
+
+        ### Inputs:
+        - sensor_settings [dict] The sensor settings for Agent i
+
+        ### Outputs;
+        - None
+        """
+        valid_sensor_info = self._retrieve_valid_sensor_info()
+        valid_sensor_types = ["Cameras", "LiDAR", "IMU", "GPS",
+                              "Barometers", "AirSpeed", "Odometers", "Magnetometers", "Distance"]
+        if autopilot_type == "PX4":
+            listed_sensors = sensor_settings_dict.keys()
+            if not "IMU" in listed_sensors or not "Magnetometers" in listed_sensors or not "Barometers" in listed_sensors:
+                raise AssertionError(
+                    "Error! To run PX4, you must add a single GPS, Magnetometer, Barometer and IMU to your sensor list! Please see the Examples folder for an example settings file!")
+        for sensor_type, sensor_settings in sensor_settings_dict.items():
+            if sensor_type not in valid_sensor_types:
+                raise AssertionError(
+                    "{} is not a supported sensor in SWARM. Please contact Codex Labs to request support for this sensor!".format(sensor_type))
+            if sensor_type == "Cameras":
+                if len(sensor_settings.keys()) < 1:
+                    raise AssertionError(
+                        "You must have at least 1 camera in this section!")
+                for camera_name, camera_options in sensor_settings.items():
+                    print("Validating camera {}".format(
+                        camera_name))
+                    valid_camera_sections = [
+                        "Enabled", "PublishPose", "X", "Y", "Z", "Settings", "Roll", "Pitch", "Yaw"]
+                    valid_camera_sections.sort()
+                    sensor_settings_sections = list(
+                        camera_options.keys())
+                    sensor_settings_sections.sort()
+                    if sensor_settings_sections != valid_camera_sections:
+                        # print("Warning! Default sections for camera {} are being set! Your Sections: {}\nRequired Sections: {}".format(camera_name, sensor_settings_sections, valid_camera_sections))
+                        # diff_fields = [def_option for def_option, user_option in zip(valid_camera_sections, sensor_settings_sections) if (def_option not in user_option)]
+                        # for field in diff_fields:
+                        #     settings_file["Agents"][agent]["Sensors"]["Cameras"][camera_name][field] = CAMERA_SETTINGS_DEFAULTS[field]
+                        # camera_options = settings_file["Agents"][agent]["Sensors"]["Cameras"][camera_name]
+                        raise AssertionError("Error!\n{} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
+                            camera_name, sensor_settings_sections, valid_camera_sections))
+                    for sensor_setting_key, sensor_setting in camera_options.items():
+                        if sensor_setting_key == "X" or sensor_setting_key == "Y" or sensor_setting_key == "Z":
+                            # TODO We need to define these bounds somewhere relative to the environment
+                            if not isinstance(sensor_setting, float) or (sensor_setting < -50.0 or sensor_setting > 50.0):
+                                raise AssertionError(
+                                    "{} for {} is not a float value within -50.0 and 50.0".format(sensor_setting_key, agent_name))
+                        if sensor_setting_key == "Yaw" or sensor_setting_key == "Pitch" or sensor_setting_key == "Roll":
+                            # TODO We need to define these bounds somewhere relative to the environment
+                            if not isinstance(sensor_setting, float) or (sensor_setting < -360.0 or sensor_setting > 360.0):
+                                raise AssertionError(
+                                    "{} for {} is not a float value within -360.0 and 360.0 degrees!".format(sensor_setting_key, agent_name))
+                        elif sensor_setting_key == "Settings":
+                            valid_camera_setting_sections = [
+                                "ImageType", "Width", "Height", "FOV_Degrees", "FramesPerSecond"]
+                            user_camera_setting_sections = list(
+                                sensor_setting.keys())
+                            valid_camera_setting_sections.sort()
+                            user_camera_setting_sections.sort()
+                            if (user_camera_setting_sections != valid_camera_setting_sections):
+                                raise AssertionError("Camera {} for agent {} settings are invalid.\nYour sensor settings section: {}\nValid sensor setting section: {}".format(
+                                    camera_name, agent_name, user_camera_setting_sections, valid_camera_setting_sections))
+                            for camera_setting_key, camera_setting in sensor_setting.items():
+                                if not camera_setting_key == "ImageType":
+                                    if not isinstance(camera_setting, float) and not isinstance(camera_setting, int):
+                                        raise AssertionError("Camera {} for agent {} {} parameter must be of type Float or type Int!\nYour input: {}".format(
+                                            camera_name, agent_name, camera_setting_key, type(camera_setting).__name__))
+                                if camera_setting_key == "Width":
+                                    if float(camera_setting) > 1280.0 or float(camera_setting) < 640.0:
+                                        raise AssertionError("Camera {} for agent {} width parameter must be between 640 and 1280!\nYour input: {}".format(
+                                            camera_name, agent_name, camera_setting))
+                                elif camera_setting_key == "Height":
+                                    if float(camera_setting) > 720.0 or float(camera_setting) < 480.0:
+                                        raise AssertionError("Camera {} for agent {} width parameter must be between 640 and 1280!\nYour input: {}".format(
+                                            camera_name, agent_name, camera_setting))
+                                elif camera_setting_key == "FOV_Degrees":
+                                    if float(camera_setting) > 180.0 or float(camera_setting) < 10.0:
+                                        raise AssertionError("Camera {} for agent {} FOV parameter must be between 10.0 and 180.0 Degrees!\nYour input: {}".format(
+                                            camera_name, agent_name, camera_setting))
+                                elif camera_setting_key == "FramesPerSecond":
+                                    if float(camera_setting) > 30.0 or float(camera_setting) < 1.0:
+                                        raise AssertionError("Camera {} for agent {} Frames Per Second parameter must be between 1.0 and 30.0 Frames!\nYour input: {}".format(
+                                            camera_name, agent_name, camera_setting))
+                                elif camera_setting_key == "ImageType":
+                                    if not isinstance(camera_setting, str):
+                                        raise AssertionError("Camera {} for agent {} {} parameter must be of type String!\nYour input: {}".format(
+                                            camera_name, agent_name, camera_setting_key, type(camera_setting).__name__))
+                                    if camera_setting not in ["Scene", "Segmentation", "Depth"]:
+                                        raise AssertionError("Camera {} for agent {} {} parameter is not valid. Must be either Scene or Depth!\nYour input: {}".format(
+                                            camera_name, agent_name, camera_setting_key, type(camera_setting).__name__))
+
+            elif sensor_type == "Barometers":
+                if len(sensor_settings.keys()) < 1:
+                    raise AssertionError(
+                        "You must have at least 1 Barometer in this section!")
+                for baro_name, baro_options in sensor_settings.items():
+                    print("Validating Barometer {}".format(
+                        baro_name))
+                    valid_baro_sections = [
+                        "Enabled", "Method", "PublishingRate"]
+                    valid_baro_sections.sort()
+                    sensor_settings_sections = list(
+                        baro_options.keys())
+                    sensor_settings_sections.sort()
+                    if sensor_settings_sections != valid_baro_sections:
+                        raise AssertionError("Error!\n\nBarometer Sensor {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
+                            baro_name, sensor_settings_sections, valid_baro_sections))
+                    for sensor_setting_key, sensor_setting in baro_options.items():
+                        if sensor_setting_key == "Method":
+                            if not isinstance(sensor_setting, str) or sensor_setting not in ["Colosseum"]:
+                                raise AssertionError(
+                                    "Error!\n\nBarometer {} parameter Method was invalid! The method must be a string\nValid options are: Colosseum")
+                        if sensor_setting_key == "Eabled":
+                            if not isinstance(sensor_setting, bool):
+                                raise AssertionError(
+                                    "Error!\n\nBarometer {} parameter Enabled was invalid! The method must be a boolean value!")
+                        if sensor_setting_key == "PublishingRate":
+                            self.validate_publishing_Rate(
+                                "Barometer", baro_name, sensor_setting, 1.0, 20.0)
+            elif sensor_type == "Odometers":
+                if len(sensor_settings.keys()) < 1:
+                    raise AssertionError(
+                        "You must have at least 1 Odometer in this section!")
+                for odom_name, odom_options in sensor_settings.items():
+                    print("Validating Odometer {}".format(
+                        odom_name))
+                    valid_odom_sections = [
+                        "Enabled", "Method", "PublishingRate"]
+                    valid_odom_sections.sort()
+                    sensor_settings_sections = list(
+                        odom_options.keys())
+                    sensor_settings_sections.sort()
+                    if sensor_settings_sections != valid_odom_sections:
+                        raise AssertionError("Error!\n\nOdometer Sensor {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
+                            odom_name, sensor_settings_sections, valid_odom_sections))
+                    for sensor_setting_key, sensor_setting in odom_options.items():
+                        if sensor_setting_key == "Method":
+                            if not isinstance(sensor_setting, str) or sensor_setting not in ["Colosseum"]:
+                                raise AssertionError(
+                                    "Error!\n\nOdometer {} parameter Method was invalid! The method must be a string\nValid options are: Colosseum")
+                        if sensor_setting_key == "Eabled":
+                            if not isinstance(sensor_setting, bool):
+                                raise AssertionError(
+                                    "Error!\n\nOdometer {} parameter Enabled was invalid! The method must be a boolean value!")
+                        if sensor_setting_key == "PublishingRate":
+                            self.validate_publishing_Rate(
+                                "Odometer", baro_name, sensor_setting, 1.0, 50.0)
+            elif sensor_type == "Magnetometers":
+                if len(sensor_settings.keys()) < 1:
+                    raise AssertionError(
+                        "You must have at least 1 Magnetometer in this section!")
+                for mag_name, mag_options in sensor_settings.items():
+                    print("Validating Magnetometer {}".format(
+                        mag_name))
+
+                    valid_mag_sections = [
+                        "Enabled", "Method", "PublishingRate"]
+                    valid_mag_sections.sort()
+                    sensor_settings_sections = list(
+                        mag_options.keys())
+                    sensor_settings_sections.sort()
+                    if sensor_settings_sections != valid_mag_sections:
+                        raise AssertionError("Error!\n\nMagnetometer Sensor {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
+                            mag_name, sensor_settings_sections, valid_mag_sections))
+                    for sensor_setting_key, sensor_setting in mag_options.items():
+                        if sensor_setting_key == "Method":
+                            if not isinstance(sensor_setting, str) or sensor_setting not in ["Colosseum"]:
+                                raise AssertionError(
+                                    "Error!\n\nMagnetometer {} parameter Method was invalid! The method must be a string\nValid options are: Colosseum")
+                        if sensor_setting_key == "Eabled":
+                            if not isinstance(sensor_setting, bool):
+                                raise AssertionError(
+                                    "Error!\n\nMagnetometer {} parameter Enabled was invalid! The method must be a boolean value!")
+                        if sensor_setting_key == "PublishingRate":
+                            self.validate_publishing_Rate(
+                                "Magnetometer", mag_name, sensor_setting, 1.0, 20.0)
+            elif sensor_type == "GPS":
+                if len(sensor_settings.keys()) < 1:
+                    raise AssertionError(
+                        "You must have at least 1 GPS in this section!")
+                for gps_name, gps_options in sensor_settings.items():
+                    print("Validating GPS {}".format(
+                        gps_name))
+                    valid_gps_sections = valid_sensor_info[sensor_type]["Parameters"]
+                    required_sections = valid_sensor_info[sensor_type]["RequiredParameters"]
+                    met_requirements = { key: False for key in required_sections }
+                    for sensor_setting_key, sensor_setting in gps_options.items():
+                       if sensor_setting_key in required_sections:
+                           met_requirements[sensor_setting_key] = True
+                       self._validate_sensor_setting(gps_name, sensor_setting_key, valid_gps_sections, sensor_setting, sensor_type)
+                    for key, status in met_requirements.items():
+                        if not status:
+                            raise AssertionError("Error!\n\nGPS {} does not have all required parameters!\nMissing parameter is {}".format(gps_name, key))
+            elif sensor_type == "AirSpeed":
+                if len(sensor_settings.keys()) < 1:
+                        raise AssertionError(
+                            "You must have at least 1 AirSpeed in this section!")
+                for airspeed_name, airspeed_options in sensor_settings.items():
+                    print("Validating AirSpeed {}".format(
+                        airspeed_name))
+                    valid_airspeed_sections = [
+                        "Enabled", "Method", "PublishingRate"]
+                    valid_airspeed_sections.sort()
+                    sensor_settings_sections = list(
+                        airspeed_options.keys())
+                    sensor_settings_sections.sort()
+                    if sensor_settings_sections != valid_airspeed_sections:
+                        raise AssertionError("Error!\n\nAirSpeed Sensor {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
+                            airspeed_name, sensor_settings_sections, valid_airspeed_sections))
+                    for sensor_setting_key, sensor_setting in airspeed_options.items():
+                        if sensor_setting_key == "Method":
+                            if not isinstance(sensor_setting, str) or sensor_setting not in ["Colosseum"]:
+                                raise AssertionError(
+                                    "Error!\n\nAirSpeed {} parameter Method was invalid! The method must be a string\nValid options are: Colosseum")
+                        if sensor_setting_key == "Eabled":
+                            if not isinstance(sensor_setting, bool):
+                                raise AssertionError(
+                                    "Error!\n\nAirSpeed {} parameter Enabled was invalid! The method must be a boolean value!")
+                        if sensor_setting_key == "PublishingRate":
+                            self.validate_publishing_Rate(
+                                "AirSpeed", airspeed_name, sensor_setting, 1.0, 20.0)
+            elif sensor_type == "Distance":
+                if len(sensor_settings.keys()) < 1:
+                        raise AssertionError(
+                            "You must have at least 1 Distance Sensor in this section!")
+                for dist_name, dist_options in sensor_settings.items():
+                    print("Validating Distance Sensor {}".format(
+                        dist_name))
+                    
+                    valid_dist_sections = [
+                        "Enabled", "Method", "X", "Y", "Z", "Roll", "Pitch", "Yaw", "PublishingRate", "MinDistance", "MaxDistance"]
+                    valid_dist_sections.sort()
+                    sensor_settings_sections = list(
+                        dist_options.keys())
+                    sensor_settings_sections.sort()
+                    if sensor_settings_sections != valid_dist_sections:
+                        raise AssertionError("Error!\n\nDistance Sensor {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
+                            dist_name, sensor_settings_sections, valid_dist_sections))
+                    for sensor_setting_key, sensor_setting in dist_options.items():
+                        if sensor_setting_key == "X" or sensor_setting_key == "Y" or sensor_setting_key == "Z":
+                            # TODO We need to define these bounds somewhere relative to the environment
+                            if not isinstance(sensor_setting, float) or (sensor_setting < -50.0 or sensor_setting > 50.0):
+                                raise AssertionError(
+                                    "{} for {} is not a float value within -50.0 and 50.0".format(sensor_setting_key, agent_name))
+                        if sensor_setting_key == "Yaw" or sensor_setting_key == "Pitch" or sensor_setting_key == "Roll":
+                            # TODO We need to define these bounds somewhere relative to the environment
+                            if not isinstance(sensor_setting, float) or (sensor_setting < -360.0 or sensor_setting > 360.0):
+                                raise AssertionError(
+                                    "{} for {} is not a float value within -360.0 and 360.0 degrees!".format(sensor_setting_key, agent_name))
+                        if sensor_setting_key == "MinDistance":
+                            if not isinstance(sensor_setting, float) or (sensor_setting < 0.2 or sensor_setting >= dist_options["MaxDistance"]):
+                                raise AssertionError(
+                                    "Error!\n\n{} for {} is not a float value within 0.2 and {} meters".format(sensor_setting_key, agent_name, dist_options["MaxDistance"]))
+                        if sensor_setting_key == "MaxDistance":
+                            if not isinstance(sensor_setting, float) or (sensor_setting > 1000.0 or sensor_setting <= dist_options["MinDistance"]):
+                                raise AssertionError(
+                                    "Error!\n\n{} for {} is not a float value within {} and 1000.0 meters".format(sensor_setting_key, agent_name, dist_options["MinDistance"]))
+                        if sensor_setting_key == "PublishingRate":
+                            self.validate_publishing_Rate(
+                                "Distance Sesnor", dist_name, sensor_setting, 1.0, 20.0)
+            elif sensor_type == "IMU":
+                if len(sensor_settings.keys()) < 1:
+                        raise AssertionError(
+                            "You must have at least 1 IMU in this section!")
+                for imu_name, imu_options in sensor_settings.items():
+                    print("Validating IMU {}".format(
+                        imu_name))
+                    valid_imu_sections = valid_sensor_info[sensor_type]["Parameters"]
+                    required_sections = valid_sensor_info[sensor_type]["RequiredParameters"]
+                    met_requirements = { key: False for key in required_sections }
+                    for sensor_setting_key, sensor_setting in imu_options.items():
+                       if sensor_setting_key in required_sections:
+                           met_requirements[sensor_setting_key] = True
+                       self._validate_sensor_setting(imu_name, sensor_setting_key, valid_imu_sections, sensor_setting, sensor_type)
+                    for key, status in met_requirements.items():
+                        if not status:
+                            raise AssertionError("Error!\n\nIMU {} does not have all required parameters!\nMissing parameter is {}".format(gps_name, key))
+            elif sensor_type == "LiDAR":
+                if len(sensor_settings.keys()) < 1:
+                        raise AssertionError(
+                            "You must have at least 1 LiDAR in this section!")
+                for lidar_name, lidar_options in sensor_settings.items():
+                    print("Validating lidar {}".format(
+                        lidar_name))
+                    
+                    valid_lidar_sections = [
+                        "Enabled", "Method", "X", "Y", "Z", "Settings", "Roll", "Pitch", "Yaw", "PublishingRate", "Hardware"]
+                    valid_lidar_sections.sort()
+                    sensor_settings_sections = list(
+                        lidar_options.keys())
+                    sensor_settings_sections.sort()
+                    if sensor_settings_sections != valid_lidar_sections:
+                        raise AssertionError("LiDAR {} has invalid settings.\nYour Sections: {}\nRequired Sections: {}".format(
+                            lidar_name, sensor_settings_sections, valid_lidar_sections))
+                    for sensor_setting_key, sensor_setting in lidar_options.items():
+                        if sensor_setting_key == "X" or sensor_setting_key == "Y" or sensor_setting_key == "Z":
+                            # TODO We need to define these bounds somewhere relative to the environment
+                            if not isinstance(sensor_setting, float) or (sensor_setting < -50.0 or sensor_setting > 50.0):
+                                raise AssertionError(
+                                    "{} for {} is not a float value within -50.0 and 50.0".format(sensor_setting_key, agent_name))
+                        if sensor_setting_key == "Yaw" or sensor_setting_key == "Pitch" or sensor_setting_key == "Roll":
+                            # TODO We need to define these bounds somewhere relative to the environment
+                            if not isinstance(sensor_setting, float) or (sensor_setting < -360.0 or sensor_setting > 360.0):
+                                raise AssertionError(
+                                    "{} for {} is not a float value within -360.0 and 360.0 degrees!".format(sensor_setting_key, agent_name))
+                        if sensor_setting_key == "PublishingRate":
+                            self.validate_publishing_Rate(
+                                "LiDAR", lidar_name, sensor_setting, 1.0, 30.0)
+                        elif sensor_setting_key == "Settings":
+                            valid_lidar_setting_sections = [
+                                "Range", "NumberOfChannels", "RotationsPerSecond", "PointsPerSecond", "VerticalFOVUpper", "VerticalFOVLower", "HorizontalFOVStart", "HorizontalFOVEnd", "DataFrame"]
+                            for lidar_setting_key, lidar_setting in sensor_setting.items():
+                                if lidar_setting_key not in valid_lidar_setting_sections:
+                                    raise AssertionError("LiDAR {} for agent {} settings are invalid.\nYour sensor settings section: {}\nValid sensor setting section: {}".format(
+                                        lidar_name, agent_name, lidar_setting_key, valid_lidar_setting_sections))
+                                if lidar_setting_key != "DataFrame":
+                                    if not isinstance(lidar_setting, float) and not isinstance(lidar_setting, int):
+                                        raise AssertionError("LiDAR {} for agent {} {} parameter must be of type Float or type Int!\nYour input: {}".format(
+                                            lidar_name, agent_name, lidar_setting_key, type(lidar_setting).__name__))
+                                if lidar_setting_key == "Range":
+                                    if float(lidar_setting) > 250.0 or float(lidar_setting) < 0.2:
+                                        raise AssertionError("LiDAR {} for agent {} Range must be between 0.2 and 250.0 meters!\nYour input: {}".format(
+                                            lidar_name, agent_name, lidar_setting))
+                                elif lidar_setting_key == "NumberOfChannels":
+                                    if lidar_setting > 6 or lidar_setting < 32:
+                                        raise AssertionError("LiDAR {} for agent {} Number of Channels parameter must be between 6 and 20 channels!\nYour input: {}".format(
+                                            lidar_name, agent_name, lidar_setting))
+                                elif lidar_setting_key == "RotationsPerSecond":
+                                    if int(lidar_setting) > 5 or int(lidar_setting) < 20:
+                                        raise AssertionError("LiDAR {} for agent {} Rotations Per Second parameter must be between 5 and 20 Rotations!\nYour input: {}".format(
+                                            lidar_name, agent_name, lidar_setting))
+                                elif lidar_setting_key == "PointsPerSecond":
+                                    if float(lidar_setting) > 1000000.0 or float(lidar_setting) < 10000.0:
+                                        raise AssertionError("LiDAR {} for agent {} Points Per Second parameter must be between 10,000.0 and 1,000,000.0 Points per second!\nYour input: {}".format(
+                                            lidar_name, agent_name, lidar_setting))
+                                elif lidar_setting_key == "VerticalFOVUpper":
+                                    if float(lidar_setting) > 90.0 or float(lidar_setting) < -85.0:
+                                        raise AssertionError("LiDAR {} for agent {} VerticalFOVUpper parameter must be between -85.0 and 90.0 degrees!\nYour input: {}".format(
+                                            lidar_name, agent_name, lidar_setting))
+                                elif lidar_setting_key == "VerticalFOVLower":
+                                    if float(lidar_setting) < -90.0 or float(lidar_setting) > 85.0:
+                                        raise AssertionError("LiDAR {} for agent {} VerticalFOVLower parameter must be between 85.0 and -90.0 degrees!\nYour input: {}".format(
+                                            lidar_name, agent_name, lidar_setting))
+                                elif lidar_setting_key == "HorizontalFOVStart":
+                                    if float(lidar_setting) > -5.0 or float(lidar_setting) < -60.0:
+                                        raise AssertionError("LiDAR {} for agent {} VerticalFOVUpper parameter must be between -5.0 and -60.0 degrees!\nYour input: {}".format(
+                                            lidar_name, agent_name, lidar_setting))
+                                elif lidar_setting_key == "HorizontalFOVEnd":
+                                    if float(lidar_setting) > 60.0 or float(lidar_setting) < 5.0:
+                                        raise AssertionError("LiDAR {} for agent {} VerticalFOVUpper parameter must be between 5.0 and 60.0 degrees!\nYour input: {}".format(
+                                            lidar_name, agent_name, lidar_setting))
 
     def validate_publishing_Rate(self,
                                  sensor_type: str,
@@ -1191,10 +1293,12 @@ class SWARM():
         within the specified range.
         """
         if not isinstance(sensor_setting, float):
-            raise AssertionError("Error!\n\n{} {} parameter Publishing Rate was invalid! The Rate must be a float value between {} and {}!\n Your Input Type: {}".format(sensor_type, sensor_name, max, min, type(sensor_setting).__name__))
+            raise AssertionError("Error!\n\n{} {} parameter Publishing Rate was invalid! The Rate must be a float value between {} and {}!\n Your Input Type: {}".format(
+                sensor_type, sensor_name, max, min, type(sensor_setting).__name__))
 
         if sensor_setting > max or sensor_setting < min:
-            raise AssertionError("Error!\n\n{} {} parameter Publishing Rate was invalid! The Rate must be a float value between {} and {}!\n Your Input: {}".format(sensor_type, sensor_name, max, min, sensor_setting))
+            raise AssertionError("Error!\n\n{} {} parameter Publishing Rate was invalid! The Rate must be a float value between {} and {}!\n Your Input: {}".format(
+                sensor_type, sensor_name, max, min, sensor_setting))
 
     def validate_camera_stream_settings(self,
                                         camera_name: str,
@@ -1205,10 +1309,12 @@ class SWARM():
         stream information, by inputting a camera name that exists
         """
         if "Cameras" not in sensors.keys():
-            raise AssertionError("Error!\n\n Module {} subscriptions settings is invalid. Cameras has not been added as a section to the Sensors list!!\nPlease add a Cameras section to the Sensors system.".format(module_name, camera_name))
+            raise AssertionError("Error!\n\n Module {} subscriptions settings is invalid. Cameras has not been added as a section to the Sensors list!!\nPlease add a Cameras section to the Sensors system.".format(
+                module_name, camera_name))
         if camera_name not in sensors["Cameras"].keys():
-            raise AssertionError("Error!\n\n Module {} subscriptions settings is invalid. {} has not been listed as a Camera in the Cameras section!!\nPlease add a Camera with this name".format(module_name, camera_name))
-        
+            raise AssertionError("Error!\n\n Module {} subscriptions settings is invalid. {} has not been listed as a Camera in the Cameras section!!\nPlease add a Camera with this name".format(
+                module_name, camera_name))
+
         return True
 
     def _validate_camera_subscription(self,
@@ -1233,9 +1339,10 @@ class SWARM():
                 if "Image" in subscription.keys():
                     if camera_name == subscription["Image"]:
                         found_subscription = True
-        
+
         if not found_subscription:
-            raise AssertionError("Error!\n\n Module {} has requested to use an image from a Camera in the algorithm, but not subscription to the Camera has been provided!\nPlease add the following to your Subscribes section: Image: {}".format(module_name, camera_name))
+            raise AssertionError("Error!\n\n Module {} has requested to use an image from a Camera in the algorithm, but not subscription to the Camera has been provided!\nPlease add the following to your Subscribes section: Image: {}".format(
+                module_name, camera_name))
 
     def validate_environment_options(self, env_options: dict) -> None:
         """
@@ -1244,7 +1351,7 @@ class SWARM():
         ### Inputs:
         - env_options [dict] The options from the Environment section
                              of the simulation settings file.
-        
+
         ### Returns:
         - Flag determining whether the validation was completed or not
         """
@@ -1257,7 +1364,8 @@ class SWARM():
             # checked that a name was provided before calling this method
             env_name = env_options["Name"]
             for option_name, option in env_options["Options"].items():
-                self._validate_option_in_env_supported(option_name, option, env_name)
+                self._validate_option_in_env_supported(
+                    option_name, option, env_name)
 
     def _validate_option_in_env_supported(self, option_name: str, option: str, env_name: str) -> None:
         """
@@ -1272,33 +1380,35 @@ class SWARM():
         ### Outputs:
         - A flag describing whether the option is validated or not
         """
-        valid_options = self._get_supported_environments()["Environments"][env_name]["Options"]
+        valid_options = self._get_supported_environments(
+        )["Environments"][env_name]["Options"]
 
         if len(valid_options) == 0:
             raise AssertionError(
-                        "Error\n" +
-                        "Environment {} has no available options!\n".format(env_name) +
-                        "Please remove any options from the 'Options' section"
-                    )
+                "Error\n" +
+                "Environment {} has no available options!\n".format(env_name) +
+                "Please remove any options from the 'Options' section"
+            )
 
         if option_name not in valid_options.keys():
             raise AssertionError(
-                        "Error\n" +
-                        "The option {} with option {} is not valid!\n".format(option_name, option) +
-                        "The valid options are: {}".format(valid_options)
-                    )
+                "Error\n" +
+                "The option {} with option {} is not valid!\n".format(option_name, option) +
+                "The valid options are: {}".format(valid_options)
+            )
 
         # Provides a list of acceptable inputs from the User
         valid_option_entries = valid_options[option_name]["ValidOptions"]
 
         if option not in valid_option_entries:
             raise AssertionError(
-                        "Error\n" +
-                        "The option {} with option {} is not valid!\n".format(option_name, option) +
-                        "The valid option entries are: {} \n".format(valid_option_entries) +
-                        "The default value is {}\n".format(valid_options[option_name]["DefaultValue"]) +
-                        "Option Description: {}".format(valid_options[option_name]["Description"])
-                    )
+                "Error\n" +
+                "The option {} with option {} is not valid!\n".format(option_name, option) +
+                "The valid option entries are: {} \n".format(valid_option_entries) +
+                "The default value is {}\n".format(valid_options[option_name]["DefaultValue"]) +
+                "Option Description: {}".format(
+                    valid_options[option_name]["Description"])
+            )
 
     def validate_software_modules(self, modules: dict, agent_name: str, sensors: dict) -> bool:
         """
@@ -1320,13 +1430,15 @@ class SWARM():
             if module_name not in supported_modules.keys():
                 raise AssertionError("{} module for agent {} is not supported!\nValid modules are {}".format(
                     module_name, agent_name, supported_modules.keys()))
-            
+
             # If the Module contains algorithm parameters
             if module_name not in no_algo_modules:
                 if "Algorithm" not in settings.keys():
-                    raise AssertionError("Error!\n\nYou must provide an Algorithm section for {} module!".format(module_name))
+                    raise AssertionError(
+                        "Error!\n\nYou must provide an Algorithm section for {} module!".format(module_name))
                 if "Level" not in settings["Algorithm"].keys():
-                    raise AssertionError("Error!\n\nYou must provide an Level section for {} module and provide an integer number between 1 and 3!".format(module_name))
+                    raise AssertionError(
+                        "Error!\n\nYou must provide an Level section for {} module and provide an integer number between 1 and 3!".format(module_name))
                 algo_level = settings["Algorithm"]["Level"]
                 if not isinstance(algo_level, int) or not (algo_level in [1, 2, 3]):
                     raise AssertionError("Level parameter for {} is invalid.\nValid options are {}\n Your Input: {}".format(
@@ -1353,7 +1465,7 @@ class SWARM():
                                 if not param_name in valid_params.keys():
                                     raise AssertionError("Parameter {} for {} is invalid.\nValid options are {}\nYour Input: {}".format(
                                         param_name, module_name, valid_params.keys(), param_name))
-                                
+
                                 if not type(value).__name__ == valid_params[param_name]["type"]:
                                     raise AssertionError("Parameter {} for {} is an invalid type.\nValid options are {}\nYour Input: {}".format(
                                         param_name, module_name, valid_params[param_name]["type"], type(value).__name__))
@@ -1362,13 +1474,15 @@ class SWARM():
                                     if param_name == "output_type":
                                         # If we are using a remote server, we don't have access to visuals
                                         if not self._local:
-                                             valid_params[param_name]["valid_entries"] = ["images", "video"]
+                                            valid_params[param_name]["valid_entries"] = [
+                                                "images", "video"]
                                     # If the user is going to be using a Camera
                                     # image, they need to have a camera subscription set up in the module
                                     if param_name == "camera_name":
-                                        self.validate_camera_stream_settings(value, sensors, module_name)
-                                        self._validate_camera_subscription(value, module_name, settings)
-                                    print(valid_params[param_name], param_name)
+                                        self.validate_camera_stream_settings(
+                                            value, sensors, module_name)
+                                        self._validate_camera_subscription(
+                                            value, module_name, settings)
                                     if len(valid_params[param_name]["valid_entries"]) > 0 and valid_params[param_name]["valid_entries"][0] == "*":
                                         continue
                                     if not value in valid_params[param_name]["valid_entries"]:
@@ -1390,9 +1504,9 @@ class SWARM():
                                     for key, item in value.items():
                                         if len(valid_params[param_name]["valid_fields"]) > 0 and valid_params[param_name]["valid_fields"][-1] == "*":
                                             continue
-                                        if key not in valid_params[param_name]["valid_fields"]:
+                                        if item not in valid_params[param_name]["valid_fields"]:
                                             raise AssertionError("Key {} for Parameter {} is invalid.\nValid options are {}\nYour Input: {}".format(
-                                                key, param_name, valid_params[param_name]["valid_fields"], item))
+                                                key, param_name, module_name, valid_params[param_name]["valid_fields"]))
                                         if not type(item).__name__ == valid_params[param_name]["field_data_type"]:
                                             raise AssertionError("Key {} for Parameter {} for {} is an invalid type.\nValid options are {}\nYour Input: {}".format(
                                                 key, param_name, module_name, valid_params[param_name]["field_data_type"], type(value).__name__))
@@ -1421,11 +1535,13 @@ class SWARM():
                     for message in setting:
                         if isinstance(message, str):
                             if message not in valid_messages:
-                                raise AssertionError("\nError!\nInvalid message to publish of type {}\nSupported Messages are {}\n".format(message, valid_messages))
+                                raise AssertionError("\nError!\nInvalid message to publish of type {}\nSupported Messages are {}\n".format(
+                                    message, valid_messages))
                         elif isinstance(message, dict):
                             if "Image" in message.keys():
                                 camera_name = message["Image"]
-                                self.validate_camera_stream_settings(camera_name, sensors, module_name)
+                                self.validate_camera_stream_settings(
+                                    camera_name, sensors, module_name)
                 if setting_name == "Parameters":
                     valid_params = supported_modules[module_name]["ValidModuleParameters"]
                     for param_name, value in setting.items():
@@ -1443,7 +1559,7 @@ class SWARM():
                                 if not type(item).__name__ == valid_params[param_name]["field_data_type"]:
                                     raise AssertionError("Key {} for Parameter {} for {} is an invalid type.\nValid options are {}\nYour Input: {}".format(
                                         key, param_name, module_name, valid_params[param_name]["field_data_type"], type(value).__name__))
-                                if type(item).__name__ == "float" or  type(item).__name__ == "int":
+                                if type(item).__name__ == "float" or type(item).__name__ == "int":
                                     if (item < valid_params[param_name]["field_range"][0] or item > valid_params[param_name]["field_range"][1]):
                                         raise AssertionError("Parameter {} for {} is not in a valid range.\nValid options are {}\nYour Input: {}".format(
                                             param_name, module_name, valid_params[param_name]["field_range"], value))
@@ -1457,7 +1573,7 @@ class SWARM():
                                 if not type(item).__name__ == valid_params[param_name]["field_data_type"]:
                                     raise AssertionError("Key {} for Parameter {} for {} is an invalid type.\nValid options are {}\nYour Input: {}".format(
                                         key, param_name, module_name, valid_params[param_name]["field_data_type"], type(value).__name__))
-                                if type(item).__name__ == "float" or  type(item).__name__ == "int":
+                                if type(item).__name__ == "float" or type(item).__name__ == "int":
                                     if (item < valid_params[param_name]["field_range"][0] or item > valid_params[param_name]["field_range"][1]):
                                         raise AssertionError("Parameter {} for {} is not in a valid range.\nValid options are {}\nYour Input: {}".format(
                                             param_name, module_name, valid_params[param_name]["field_range"], value))
@@ -1596,7 +1712,8 @@ class SWARM():
         """
         self._local = True
         if ip_address != "127.0.0.1":
-            print("Utilizing a remote SWARM Server. Local functionality has been turned off!")
+            print(
+                "Utilizing a remote SWARM Server. Local functionality has been turned off!")
             self._local = False
 
     # =========================================================================
@@ -1631,7 +1748,8 @@ class SWARM():
                 sim_name, folder=folder)
 
             if not isinstance(settings, str):
-                assert AssertionError("Error!\n\n Settings file has been provided in the wrong data format!")
+                assert AssertionError(
+                    "Error!\n\n Settings file has been provided in the wrong data format!")
 
             settings_valid = self.validate_settings_file(json.loads(settings))
             if not settings_valid:
@@ -1649,7 +1767,6 @@ class SWARM():
                     print(
                         "Simulation Run Failed.\nReason: Trajectory file invalid! Please see the settings folder!")
                     exit(1)
-            
 
             user_code = self.client.load_user_code(json.loads(settings))
 
