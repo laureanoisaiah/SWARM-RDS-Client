@@ -11,31 +11,26 @@
             ],
             "GoalPoint": {
                 "Drone1": {
-                    "X": 45.0,
-                    "Y": 45.0,
-                    "Z": -3.0
+                    "X": 30.0,
+                    "Y": 25.0,
+                    "Z": -5.0
                 },
                 "Drone2": {
-                    "X": -25.0,
-                    "Y": 50.0,
-                    "Z": -3.0
+                    "X": -10.0,
+                    "Y": 30.0,
+                    "Z": -7.0
                 }
             }
         }
     },
     "Environment": {
-        "Name": "Blocks",
+        "Name": "MountainVillage",
         "StartingLevelName": "Level1",
         "StreamVideo": true
     },
     "Data": {
         "VehicleState": {
             "Format": "SWARM"
-        },
-        "Video": {
-            "Format": "MP4",
-            "VideoName": "MinSnapTest",
-            "CameraName": "Camera1"
         }
     },
     "Agents": {
@@ -55,11 +50,11 @@
                         "Pitch": 0.0,
                         "Yaw": 0.0,
                         "Settings": {
-                            "ImageType": "Scene",
                             "Width": 640,
                             "Height": 480,
                             "FOV_Degrees": 90.0,
-                            "FramesPerSecond": 24.0
+                            "FramesPerSecond": 24.0,
+                            "ImageType": "Scene"
                         }
                     }
                 }
@@ -116,8 +111,8 @@
                         "States": [],
                         "Parameters": {
                             "goal_point": [
-                                45.0,
-                                45.0
+                                30.0,
+                                25.0
                             ],
                             "map_size": [
                                 100.0,
@@ -190,11 +185,11 @@
                         "Pitch": 0.0,
                         "Yaw": 0.0,
                         "Settings": {
-                            "ImageType": "Scene",
                             "Width": 640,
                             "Height": 480,
                             "FOV_Degrees": 90.0,
-                            "FramesPerSecond": 24.0
+                            "FramesPerSecond": 24.0,
+                            "ImageType": "Scene"
                         }
                     }
                 }
@@ -251,8 +246,8 @@
                         "States": [],
                         "Parameters": {
                             "goal_point": [
-                                -25.0,
-                                50.0
+                                -10.0,
+                                30.0
                             ],
                             "map_size": [
                                 100.0,

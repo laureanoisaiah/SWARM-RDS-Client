@@ -1504,9 +1504,9 @@ class SWARM():
                                     for key, item in value.items():
                                         if len(valid_params[param_name]["valid_fields"]) > 0 and valid_params[param_name]["valid_fields"][-1] == "*":
                                             continue
-                                        if item not in valid_params[param_name]["valid_fields"]:
+                                        if key not in valid_params[param_name]["valid_fields"]:
                                             raise AssertionError("Key {} for Parameter {} is invalid.\nValid options are {}\nYour Input: {}".format(
-                                                key, param_name, module_name, valid_params[param_name]["valid_fields"]))
+                                                key, param_name, valid_params[param_name]["valid_fields"], item))
                                         if not type(item).__name__ == valid_params[param_name]["field_data_type"]:
                                             raise AssertionError("Key {} for Parameter {} for {} is an invalid type.\nValid options are {}\nYour Input: {}".format(
                                                 key, param_name, module_name, valid_params[param_name]["field_data_type"], type(value).__name__))

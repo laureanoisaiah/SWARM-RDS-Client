@@ -15,9 +15,9 @@ import matplotlib.ticker as ticker
 import time
 import logging
 
-from utils.algorithm_utils import Algorithm
-from utils.data_classes import Trajectory, MovementCommand, PosVec3
-from utils.log_utils import UserLogger
+from utilities.algorithm_utils import Algorithm
+from utilities.data_classes import Trajectory, MovementCommand, PosVec3
+from utilities.log_utils import UserLogger
 
 
 class AStar(Algorithm):
