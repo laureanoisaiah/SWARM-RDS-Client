@@ -2,7 +2,7 @@
 API Library for interacting with the SWARM Simulation Developer system
   
 ## Additional Documentation
-Please view the additional documentation at [SWARM Developer Documentation](https://codexlabsllc.github.io/SWARMSimFirmware/)
+Please view the additional documentation at [SWARM Developer Documentation](https://codexlabsllc.github.io/SWARM-RDS-Client-Dev/)
   
 ## Dependencies
 Supported Versions of Python: 3.7 - 3.11
@@ -98,9 +98,29 @@ and you can also open or close doors (hit the `o` key) and turn on the lights (h
 Get started in the cloud is even easier. Just ensure that you have this repository
 downloaded.
   
-Get the ip address from the Codex representative, which will be sent when you
-request access to the cloud. Then, you run the system just as you would with a local
-install with:
+### Spinning up a SWARM Server
+We have a number of servers readily available on Amazon Web Services (AWS).
+  
+To get started, you will need to create an account at (www.swarmsim.io)[https://www.swarmsim.io].
+  
+Once you have logged in, you will see a green button on the dashboard at the bottom of the screen that says: "Cloud Server Manager".
+  
+![Dashobard with Server Link](images/DashboardWithServerButton.png)
+
+Click that button and you will be taken to the main server management page.
+  
+![Server Manager Dashboard](images/ServerManagerStartPage.png)  
+
+Next, you will be able to select an environemnt to deploy and request a server. The process takes between 30 seconds and 1 minute to start.
+  
+You will then see the following screen, providing an IP address of the server to use in the following steps.
+  
+![Server Access Request Successful](images/ServerAccessRequest.png)
+  
+You can restart the system and turn it off when you are finished. If you do not submit a Simulation for an hour,
+the system will automatically turn off.
+### Running a Simulation
+
 ```
 python3 main.py --map-name SWARMHome --ip-address IP_ADDRESS
 ```
