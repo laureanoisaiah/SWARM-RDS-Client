@@ -1,33 +1,32 @@
 # =============================================================================
-# Copyright 2022-2023. Codex Laboratories LLC.
-# 
-# Created By: Tyler Fedrizzi
-# Created On: 6 December 2022
+# Copyright 2022-2023. Codex Laboratories LLC. All Rights Reserved.
 #
-# Description: Setup the SWARM Sim Firmware for installation
+# Created By: Tyler Fedrizzi
+# Created On: 1 August 2023
+#
+# Description: Setup File for the SWARM RDS Client core library
 # =============================================================================
-exec(open('core/_version.py').read())
+from setuptools import setup
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
-
-setup(name='swarm-sim-firmware',
-      version="1.2.0",
-      author='Codex Laboratories LLC',
-      author_email='tylerfedrizzi@codex-labs-llc.com',
-      url="https://codexlabsllc.github.io/SWARMSimFirmware",
-      description="SWARM Simulation Firmware",
-      long_description="""\
-SWARM Simulation Firmware
-
-Frontend client to interact with the SWARM Simulation Firmware system.
+setup(
+    name="SWARMRDSClientCore",
+    version="1.4.0",
+    packages=[
+        "SWARMRDSClientCore",
+        "SWARMRDSClientCore/core",
+        "SWARMRDSClientCore/utilities",
+        "SWARMRDSClientCore/user_code",
+    ],
+    install_requires=[
+        "matplotlib",
+        "tqdm",
+        "py-machineid",
+        "requests",
+        "pandas"
+    ],
+    url="https://codexlabsllc.github.io/SWARM-RDS-Client-Dev/",
+    description="SWARM RDS Client",
+    long_description="""\
+SWARM RDS Client\
 """,
-      packages=['swarm-sim-firmware'],
-      install_requires=['matplotlib', 'tqdm', "py-machineid", "requests"],
-      license="Apache Software License",
-      classifiers=[
-          'Programming Language :: Python :: 3',
-          'License :: OSI Approved'],
-      )
+)

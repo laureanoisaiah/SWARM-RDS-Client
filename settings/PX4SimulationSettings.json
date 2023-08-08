@@ -7,13 +7,13 @@
         "Options": {
             "MultiLevel": false,
             "LevelNames": [
-                "Home1"
+                "Level1"
             ]
         }
     },
     "Environment": {
         "Name": "SWARMHome",
-        "StartingLevelName": "Home1",
+        "StartingLevelName": "Level1",
         "StreamVideo": true,
         "Options": {
             "Doors": "Open",

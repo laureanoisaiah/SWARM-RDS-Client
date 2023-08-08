@@ -1,7 +1,13 @@
 {
-    "Scenarios": [
-        "DataCollection",
-        "FreePlay",
-        "Navigation"
-    ]
+    "Scenarios": {
+        "DataCollection": {
+            "TrajectoryRequired": true
+        },
+        "FreePlay": {
+            "TrajectoryRequired": false
+        },
+        "Navigation": {
+            "TrajectoryRequired": false
+        }
+    }
 }

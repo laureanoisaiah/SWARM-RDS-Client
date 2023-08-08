@@ -2,11 +2,11 @@
     "Environments": {
         "SWARMHome": {
             "Levels": [
-                "Home1",
-                "Home2",
-                "Home3"
+                "Level1",
+                "Level2",
+                "Level3"
             ],
-            "StartingLevel": "Home1",
+            "StartingLevel": "Level1",
             "Options": {
                 "Doors": {
                     "ValidOptions": ["Open", "Closed"],
