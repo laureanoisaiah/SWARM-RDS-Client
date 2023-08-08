@@ -8,7 +8,7 @@
 # =============================================================================
 import argparse
 
-from core.swarm import SWARM
+from SWARMRDSClientCore.core.swarm import SWARM
 
 SIMULATION_NAME = "example"
 
@@ -43,12 +43,11 @@ if not return_user_boolean(args.download_data_only):
 
     try:
         print("\nRunning {} simulation in the {} environment".format(args.sim_name, args.map_name))
-        sim_manager.run_simulation(args.map_name, args.sim_name, ip_address=args.ip_address)
+        completed = sim_manager.run_simulation(args.map_name, args.sim_name, ip_address=args.ip_address)
+        # Automatically download data if the simulation completed
+        if completed:
+             sim_manager.extract_data(args.sim_name)
     except KeyboardInterrupt:
         pass
-
-answer = input("Would you like to download data? (y/n)")
-if return_user_boolean(answer):
-    sim_manager.extract_data(args.sim_name)
 
 print("Run completed!")

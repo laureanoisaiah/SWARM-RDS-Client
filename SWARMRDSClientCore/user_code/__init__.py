@@ -1,0 +1,1 @@
+from .BlankAlgorithm import *

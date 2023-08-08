@@ -22,7 +22,6 @@
             "HighLevelPathPlanning",
             "ObstacleAvoidance",
             "Detector",
-            "VideoRecorder",
             "Mapping",
             "TorchPerception",
             "Perception",
@@ -51,6 +50,7 @@
             "SensorDataCollector"
         ],
         "Mapping": {
+            "ValidModuleParameters": {},
             "ValidClassNames": [
                 "SWARMOccupancyMap"
             ],
@@ -119,6 +119,7 @@
             }
         },
         "HighLevelBehavior": {
+            "ValidModuleParameters": {},
             "ValidClassNames": [
                 "PathFollowing"
             ],
@@ -226,6 +227,7 @@
             }
         },
         "HighLevelPathPlanning": {
+            "ValidModuleParameters": {},
             "ValidClassNames": [
                 "AStar2D"
             ],
@@ -244,6 +246,10 @@
                         "description": "The X and Y coordinates that are the goal in NED in meters",
                         "length": 2,
                         "field_data_type": "float",
+                        "labels": [
+                            "X",
+                            "Y"
+                        ],
                         "field_range": [
                             -999.0,
                             999.0
@@ -254,6 +260,10 @@
                         "description": "The Resolution of the Voxel Grid map in meters",
                         "length": 2,
                         "field_data_type": "float",
+                        "labels": [
+                            "X",
+                            "Y"
+                        ],
                         "field_range": [
                             -999.0,
                             999.0
@@ -277,6 +287,7 @@
                     }
                 }
             },
+            
             "ValidInputArgs": {
                 "AStar2D": [
                     "OccupancyMap"
@@ -286,20 +297,6 @@
                 "AStar2D": [
                     "Trajectory"
                 ]
-            }
-        },
-        "VideoRecorder": {
-            "ValidClassNames": [
-                "VideoRecorder"
-            ],
-            "ValidParameters": {
-                "VideoRecorder": {}
-            },
-            "ValidInputArgs": {
-                "VideoRecorder": []
-            },
-            "ValidReturnValues": {
-                "VideoRecorder": []
             }
         },
         "SensorDataCollector": {
@@ -326,6 +323,7 @@
             }
         },
         "Detector": {
+            "ValidModuleParameters": {},
             "ValidClassNames": [
                 "SWARMDetector"
             ],
@@ -340,6 +338,7 @@
             }
         },
         "ObstacleAvoidance": {
+            "ValidModuleParameters": {},
             "ValidClassNames": [
                 "SlopeDetection"
             ],
@@ -508,6 +507,7 @@
             }
         },
         "Perception": {
+            "ValidModuleParameters": {},
             "ValidClassNames": [],
             "ValidParameters": {},
             "ValidInputArgs": {},

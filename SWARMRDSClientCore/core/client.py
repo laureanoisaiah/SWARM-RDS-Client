@@ -15,11 +15,13 @@ import machineid
 import subprocess
 import sys
 
+from queue import Queue
 from tqdm import tqdm
 from threading import Thread, Event
 from json import JSONDecodeError
 
-from core.validator import activate_license
+from SWARMRDSClientCore.core.validator import activate_license
+from SWARMRDSClientCore.utilities.file_utils import find_file_path, find_folder_path
 
 # from utils.constants import ENCODING_SCHEME
 ENCODING_SCHEME = "utf-8"
@@ -38,8 +40,10 @@ class SWARMClient(Thread):
     - debug [bool] A flag for debugging
     """
 
-    def __init__(self, ip_address: str = "127.0.0.1", port: int = 5002, debug: bool = False) -> None:
+    def __init__(self, ip_address: str = "127.0.0.1", port: int = 5002, debug: bool = False, response_queue: Queue = None, user_file_path: str = None) -> None:
         super().__init__(daemon=True)
+        if response_queue is not None:
+            response_queue.put({"Command": "RunSimulation", "Message": "Connecting to {} on port {}".format(ip_address, port)})
         self.address = ip_address
         self.port = port
         # TODO Find a way to make this a isolated variable
@@ -51,9 +55,14 @@ class SWARMClient(Thread):
         self.license_key = ""
         self.license_activated = False
         self.encoding = "utf-8"
+        # We may or may not have a Queue depending on what mode
+        # we are running in.
+        self._response_queue = response_queue
         # Save the last response provided
         self.last_response = dict()
         self.machine_id = machineid.hashed_id('swarm-dev')
+
+        self._file_path = user_file_path
         self.load_license_key()
         self.activate_user_license()
 
@@ -75,8 +84,12 @@ class SWARMClient(Thread):
         Load the license key from the settings file. Stop program
         execution if this file doesn't exist.
         """
+        if self._file_path is not None:
+            file_path = self._file_path + "/settings/LicenseKey.json"
+        else:
+            file_path = find_file_path("LicenseKey.json", "settings")
         try:
-            with open("settings/LicenseKey.json", "r") as file:
+            with open(file_path, "r") as file:
                 license_key = json.load(file)
             self.license_key = license_key["Key"]
             self.license_activated = license_key["Activated"]
@@ -87,7 +100,7 @@ class SWARMClient(Thread):
             raise AssertionError("Error! No field named 'Key' was found in the license file.\nPlease use the following format:\n\n{\n'Key': LICENSE_KEY,\n'Activate': false\n}")
         except Exception:
             traceback.print_exc()
-            exit(1)
+            return
 
     def activate_user_license(self) -> bool:
         """
@@ -106,7 +119,11 @@ class SWARMClient(Thread):
                 self.license_activated = True
                 print("\nLicense key was validated and associated with this machine!\n")
                 new_license_file = dict(Key=self.license_key, Activated=True, AccountID=self.account_id)
-                with open("settings/LicenseKey.json", "w") as file:
+                if self._file_path is not None:
+                    file_path = self._file_path + "/settings/LicenseKey.json"
+                else:
+                    file_path = find_file_path("LicenseKey.json", "settings")
+                with open(file_path, "w") as file:
                     json.dump(new_license_file, file)
                 return validated
             else:
@@ -154,7 +171,9 @@ class SWARMClient(Thread):
             return True
         except Exception as error:
             print(error)
-            exit(1)
+            self.connected = False
+            if self._response_queue is not None:
+                self._response_queue.put({"Command": "RunSimulation", "Message": "Connection to server failed!"})
             return False
 
     def send_message(self, message: str) -> bool:
@@ -212,6 +231,10 @@ class SWARMClient(Thread):
             "LicenseKey": self.retrieve_license_key(),
             "MachineID": self.machine_id
         }}
+        if self._file_path is not None:
+            file_name = self._file_path + "/" + file_name
+        else:
+            file_name = find_file_path(file_name, file_name.split("/")[-2])
         with open(file_name, "rb") as file:
             raw_bytes = file.read()
 
@@ -313,17 +336,27 @@ class SWARMClient(Thread):
                     total_bytes = 0
                     if "Status" in message['Body'].keys():
                         print(message["Body"]["Status"])
+                        if self._response_queue is not None:
+                            self._response_queue.put({"Command": "RunSimulation", "Message": message["Body"]["Status"]})
                     if "ValidationResults" in message["Body"].keys():
                         print("User Code has been Validated")
+                        response_msg = ""
                         for agent, feedback in message["Body"]["ValidationResults"].items():
+                            response_msg += "Code Feedback for {}\n".format(agent)
                             print("Code Feedback for {}".format(agent))
                             for module_name, statement in feedback.items():
+                                response_msg += "\n\nModule: {} \n\n".format(module_name)
+                                response_msg += statement
                                 print("\n\nModule: {} \n\n".format(module_name))
                                 print(statement)
+                        if self._response_queue is not None:
+                            self._response_queue.put({"Command": "RunSimulation", "Message": response_msg})
                     if "Error" in message["Body"].keys():
                         error = message["Body"]["Error"]
                         if error == "Critical":
                             print("ERROR! {}".format(error))
+                            if self._response_queue is not None:
+                                self._response_queue.put({"Command": "RunSimulation", "Message": error})
                             assert AssertionError("Received a critical error!")
                     
                     # assert ValueError("Unknown message id!")
@@ -369,6 +402,7 @@ class SWARMClient(Thread):
         """
         response_completed = False
         received_bytes = b''
+        message = None
         while not response_completed:
             try:
                 message = self.socket.recv(BUFFER_SIZE)
@@ -377,6 +411,8 @@ class SWARMClient(Thread):
                     if message["Type"] == "Multipart":
                         received_bytes = self.handle_multipart(message)
                     else:
+                        if self._response_queue is not None:
+                            self._response_queue.put({"Command": "RunSimulation", "Message": message["Body"]})
                         print(message["Body"])
                         # received_bytes = message["Body"]["Data"]
                     response_completed = True
@@ -387,9 +423,9 @@ class SWARMClient(Thread):
                 pass
             except Exception:
                 traceback.print_exc()
-                print(message.decode(ENCODING_SCHEME))
-                # exit(1)
-                # traceback.print_exc()
+                if message is not None:
+                    print(message.decode(ENCODING_SCHEME))
+                return received_bytes
 
         return received_bytes
 
@@ -516,8 +552,8 @@ class SWARMClient(Thread):
                         self.socket.close()
                         time.sleep(1.0)
                         self.connected = False
-                        if loaded_models == None:
-                            exit(1)
+                        if loaded_models is None:
+                            return
                     # Check if the model has already been tared for loading
                     if  module["Parameters"]["Model"] not in loaded_models:
                         tar_file_name = self._generate_model_tar_file(module["Parameters"]["Model"])
@@ -545,11 +581,16 @@ class SWARMClient(Thread):
                     if "Algorithm" not in module.keys():
                         continue
                     isCustomModule, isCustomAlgo = self.query_supported_module_list(module_name, module["Algorithm"]["ClassName"])
+                    if self._file_path is not None:
+                        file_path = self._file_path + "/user_code"
+                    else:
+                        file_path = find_folder_path("user_code")
                     if isCustomAlgo:
-                        with open("{}/user_code/{}/{}.py".format(path, agent_name,  module["Algorithm"]["ClassName"]), "r") as file:
+                        
+                        with open("{}/{}/{}.py".format(file_path, agent_name,  module["Algorithm"]["ClassName"]), "r") as file:
                             user_code[agent_name][module_name] = {"Code": json.dumps(file.read()), "Model": False, "AlgorithmName":  module["Algorithm"]["ClassName"]}
                     elif isCustomModule:
-                        with open("{}/user_code/{}/{}.py".format(path, agent_name, module_name), "r") as file:
+                        with open("{}/{}/{}.py".format(file_path, agent_name, module_name), "r") as file:
                             user_code[agent_name][module_name] = {"Code": json.dumps(file.read()), "Model": False, "AlgorithmName": module["Algorithm"]["ClassName"]}
 
         return user_code
@@ -583,7 +624,11 @@ class SWARMClient(Thread):
         - A boolean flag that says whether the module is available for
           this feature.
         """
-        with open("core/SupportedSoftwareModules.json", "r") as file:
+        if self._file_path is not None:
+            file_path = self._file_path + "/SWARMRDSClientCore/core/SupportedSoftwareModules.json"
+        else:
+            file_path = find_file_path("SupportedSoftwareModules.json", "SWARMRDSClientCore/core")
+        with open(file_path, "r") as file:
             supported_modules = json.load(file)["SupportedModules"]
 
         # If the User is defining a new module that we don't know the
@@ -604,7 +649,11 @@ class SWARMClient(Thread):
         """
         print("Querying Supported List")
         print(module_name, class_name)
-        with open("core/SupportedSoftwareModules.json", "r") as file:
+        if self._file_path is not None:
+            file_path = self._file_path + "/SWARMRDSClientCore/core/SupportedSoftwareModules.json"
+        else:
+            file_path = find_file_path("SupportedSoftwareModules.json", "SWARMRDSClientCore/core")
+        with open(file_path, "r") as file:
             supported_modules = json.load(file)["SupportedModules"]
 
         # If the User is defining a new module that we don't know the
@@ -660,7 +709,6 @@ class SWARMClient(Thread):
             return completed
         except AssertionError:
             print("Simulation failed to be completed!")
-            exit(1)
         except Exception as error:
             print(error)
             return False
@@ -721,15 +769,20 @@ class SWARMClient(Thread):
             # TODO We should wait for message receipt with a timeout.
             raw_img_bytes = self.wait_for_response_bytes(self.message_id)
             if raw_img_bytes:
-                dirs = os.listdir(".")
+                if self._file_path is not None:
+                    file_path = self._file_path
+                else:
+                    file_path = os.getcwd()
+                dirs = os.listdir(file_path)
                 if not "data" in dirs:
-                    os.makedirs("data")
+                    os.makedirs(file_path + "data")
                     # subprocess.run(["mkdir", "-p", "{}/data".format(os.getcwd())])
                 # TODO Make this either a tar of a zip file
-                with open("{}/data/{}_data.tar.gz".format(os.getcwd(), message["SimName"]), "wb") as file:
+
+                with open("{}/data/{}_data.tar.gz".format(file_path, message["SimName"]), "wb") as file:
                     file.write(raw_img_bytes)
                 
-                os.system("tar -xf {}/data/{}_data.tar.gz -C {}/data && rm {}/data/{}_data.tar.gz".format(os.getcwd(), message["SimName"], os.getcwd(), os.getcwd(), message["SimName"]))
+                os.system("tar -xf {}/data/{}_data.tar.gz -C {}/data && rm {}/data/{}_data.tar.gz".format(file_path, message["SimName"], file_path, file_path, message["SimName"]))
             # Only increment to the next message id if we know the last message
             # was sent.
             if sent:
@@ -780,7 +833,7 @@ class SWARMClient(Thread):
             return completed
         except AssertionError:
             print("Simulation failed to completed!")
-            exit(1)
+            return False
         except Exception as error:
             print(error)
             return False
@@ -803,7 +856,11 @@ class SWARMClient(Thread):
             # TODO We should wait for message receipt with a timeout.
             raw_img_bytes = self.wait_for_response_bytes(self.message_id)
             if raw_img_bytes:
-                with open("maps/map_data.tar.gz", "wb") as file:
+                if self._file_path is not None:
+                    file_path = self._file_path + "/maps/map_data.tar.gz"
+                else:
+                    file_path = find_file_path("map_data.tar.gz", "maps")
+                with open(file_path, "wb") as file:
                     file.write(raw_img_bytes)
             # Only increment to the next message id if we know the last message
             # was sent.

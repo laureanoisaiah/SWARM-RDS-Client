@@ -6,6 +6,6 @@
 #
 # Description: Core Execution of the forward-facing gui
 # =============================================================================
-from core.client import *
-from core.gui import *
-from core.swarm import *
+from .client import *
+from .swarm import *
+from .validator import *

@@ -9,6 +9,7 @@
 # Encoding scheme for sending bytes
 ENCODING_SCHEME = 'utf-8'
 
+
 CAMERA_SETTINGS_DEFAULTS = {
     "PublishPose": False,
     "Enabled": False,

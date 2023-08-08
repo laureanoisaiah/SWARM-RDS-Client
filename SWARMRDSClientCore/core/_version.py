@@ -6,3 +6,4 @@
 #
 # Description: Core Execution of the forward-facing gui
 # =============================================================================
+__version__ = '1.4.0'
