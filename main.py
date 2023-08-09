@@ -8,7 +8,7 @@
 # =============================================================================
 import argparse
 
-from SWARMRDSClientCore.core.swarm import SWARM
+from SWARMRDS.core.swarm import SWARM
 
 SIMULATION_NAME = "example"
 

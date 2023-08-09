@@ -15,9 +15,9 @@ import matplotlib.ticker as ticker
 import time
 import logging
 
-from utilities.algorithm_utils import Algorithm
-from utilities.data_classes import Trajectory, MovementCommand, PosVec3
-from utilities.log_utils import UserLogger
+from SWARMRDS.utilities.algorithm_utils import Algorithm
+from SWARMRDS.utilities.data_classes import Trajectory, MovementCommand, PosVec3
+from SWARMRDS.utilities.log_utils import UserLogger
 
 
 class AStar(Algorithm):

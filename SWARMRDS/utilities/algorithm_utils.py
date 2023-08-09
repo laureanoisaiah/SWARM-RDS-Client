@@ -12,7 +12,7 @@ import inspect
 import importlib
 import traceback
 
-from SWARMRDSClientCore.utilities.data_classes import AccVec3, GPSPosVec3, PosVec3, Quaternion, VelVec3, AgentState, Trajectory
+from SWARMRDS.utilities.data_classes import AccVec3, GPSPosVec3, PosVec3, Quaternion, VelVec3, AgentState, Trajectory
 
 PRECISION = 4
 

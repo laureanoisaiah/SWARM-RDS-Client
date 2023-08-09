@@ -19,10 +19,10 @@ import matplotlib.ticker as ticker
 from queue import Queue
 from uuid import uuid4
 
-from SWARMRDSClientCore.core.client import SWARMClient
-from SWARMRDSClientCore.utilities.date_utils import convert_datetime_to_str
-from SWARMRDSClientCore.utilities.file_utils import find_file_path, find_folder_path
-from SWARMRDSClientCore.utilities.settings_utils import (
+from SWARMRDS.core.client import SWARMClient
+from SWARMRDS.utilities.date_utils import convert_datetime_to_str
+from SWARMRDS.utilities.file_utils import find_file_path, find_folder_path
+from SWARMRDS.utilities.settings_utils import (
     receive_user_input,
     generate_new_user_settings_file,
 )
@@ -45,14 +45,14 @@ class SWARM:
             ip_address=ip_address, debug=debug, response_queue=response_queue, user_file_path=user_file_path
         )
         self.ip_address = ip_address
+        self._file_path = None
+        if user_file_path is not None:
+            self._file_path = user_file_path
         self.generate_submission_tracking()
         self.map_name = ""
         self.debug = debug
         self._response_queue = response_queue
         self._has_trajectory = False
-        self._file_path = None
-        if user_file_path is not None:
-            self._file_path = user_file_path
 
     def regenerate_connection(self) -> None:
         """
@@ -81,7 +81,7 @@ class SWARM:
         """
         try:
             if self._file_path is not None:
-                file_path = self._file_path + "settings/SupportedEnvironments.json"
+                file_path = self._file_path + "/settings/SupportedEnvironments.json"
             else:
                 file_path = find_file_path("SupportedEnvironments.json", "settings")
             with open(file_path, "r") as file:
@@ -107,7 +107,7 @@ class SWARM:
         """
         try:
             if self._file_path is not None:
-                file_path = self._file_path + "settings/SupportedScenarios.json"
+                file_path = self._file_path + "/settings/SupportedScenarios.json"
             else:
                 file_path = find_file_path("SupportedScenarios.json", "settings")
             with open(file_path, "r") as file:
@@ -415,26 +415,48 @@ class SWARM:
         """
         print("Checking if submission history exsits")
         try:
-            folder_path = find_folder_path("settings")
+            if self._file_path is not None:
+                folder_path = self._file_path + "/settings"
+            else:
+                folder_path = find_folder_path("settings")
             os.chdir(folder_path)
         except FileNotFoundError:
             print("Settings folder not found!")
             print("Creating settings folder")
-            os.mkdir("settings")
-            folder_path = find_folder_path("settings")
-            os.chdir(folder_path)
+            if self._file_path is not None:
+                os.mkdir(self._file_path + "/settings")
+                folder_path = self._file_path + "/settings"
+                os.chdir(folder_path)
+            else:
+                # We are running this from the root directory of the Client
+                # repo and don't need to worry about paths
+                os.mkdir("settings")
+                folder_path = find_folder_path("settings")
+                os.chdir(folder_path)
+        # We should now be in file_path + "/settings"
         files = glob.glob("*.json")
         if "SubmissionHistory.json" not in files:
             print("Generating new submission history")
             sub_histroy = {"History": list()}
-            with open("SubmissionHistory.json", "a") as file:
+            if self._file_path is not None:
+                file_path = self._file_path + "/settings/SubmissionHistory.json"
+            else:
+                file_path = find_folder_path("settings") + "/SubmissionHistory.json"
+            with open(file_path, "a") as file:
                 json.dump(sub_histroy, file)
         if "SubmissionList.json" not in files:
+            if self._file_path is not None:
+                file_path = self._file_path + "/settings/SubmissionList.json"
+            else:
+                file_path = find_folder_path("settings") + "/SubmissionList.json"
             print("Generating new submission list")
             sub_list = {"Submissions": {}}
-            with open("SubmissionList.json", "a") as file:
+            with open(file_path, "a") as file:
                 json.dump(sub_list, file)
         os.chdir("..")
+        print("File path is now {}".format(os.getcwd()))
+        if self._file_path is not None:
+            print("User File path is now {}".format(self._file_path))
         print("Submission history has been successfully setup!")
         return
 
@@ -469,7 +491,7 @@ class SWARM:
         - None
         """
         if self._file_path is not None:
-            file_path = self._file_path + "settings" + settings_file_name
+            file_path = self._file_path + "/settings/" + settings_file_name
         else:
             file_path = find_file_path(settings_file_name, "settings")
         with open(file_path, "r") as file:
@@ -546,6 +568,22 @@ class SWARM:
     def generate_simulation_package(
         self, settings_file_name: str, trajectory_file_name: str, sim_name: str
     ) -> tuple:
+        """
+        Generate the Submission package by reading hte settings and the
+        Trajectory file (assumign a Trajectory is required)
+
+        ### Inputs:
+        - settings_file_name [str] The name of the settings file
+        - trajectory_file_name [str] The name of the trajectory file
+        - sim_name [str] The name of the simulation
+
+        ### Outputs:
+        - The settings and trajectory as JSON strings
+        """
+        if self._file_path is not None:
+            settings_file_name = self._file_path + "/" + settings_file_name
+            trajectory_file_name = self._file_path + "/" + trajectory_file_name
+
         settings = self.read_json_file(settings_file_name)
         settings = self.add_simulation_name_to_settings(
             sim_name, settings, settings_file_name
@@ -1285,10 +1323,10 @@ class SWARM:
         """
         try:
             if self._file_path is not None:
-                file_path = self._file_path + "/" + "SWARMRDSClientCore/core/SupportedSensors.json"
+                file_path = self._file_path + "/" + "SWARMRDS/core/SupportedSensors.json"
             else:
                 file_path = find_file_path(
-                    "SupportedSensors.json", "SWARMRDSClientCore/core"
+                    "SupportedSensors.json", "SWARMRDS/core"
                 )
             with open(file_path, "r") as file:
                 return json.load(file)
@@ -2222,10 +2260,10 @@ class SWARM:
         main function that calls this.
         """
         if self._file_path is not None:
-                file_path = self._file_path + "/" + "SWARMRDSClientCore/core/SupportedSoftwareModules.json"
+                file_path = self._file_path + "/" + "SWARMRDS/core/SupportedSoftwareModules.json"
         else:
             file_path = find_file_path(
-                "SupportedSoftwareModules.json", "SWARMRDSClientCore/core"
+                "SupportedSoftwareModules.json", "SWARMRDS/core"
             )
         with open(file_path, "r") as file:
             supported_modules = json.load(file)
@@ -2900,15 +2938,17 @@ class SWARM:
                 return False
             # Give the client time to establish the connection
             time.sleep(2.0)
-            completed = self.client.send_simulation_execution_package(message)
-            if "Error" in completed.keys():
+            rcvd_msg = self.client.send_simulation_execution_package(message)
+            if "Error" in rcvd_msg.keys():
                 print("There was an error!")
-                print(completed["Error"])
+                print(rcvd_msg["Error"])
                 return False
             else:
-                self.update_submission_list(completed, folder=folder)
-                assert completed["Status"] == "Completed"
-                return completed["Status"] == "Completed"
+                self.update_submission_list(rcvd_msg, folder=folder)
+                if self._response_queue is not None:
+                    if "Status" in rcvd_msg.keys():
+                        self._response_queue.put({"Command": "RunSimulation", "Message": rcvd_msg["Status"]})
+                return rcvd_msg["Status"] == "Completed" or rcvd_msg["Status"] == "Client ended simulation!"
         except AssertionError:
             print("Simulation could not be completed!")
             return False
@@ -2954,6 +2994,17 @@ class SWARM:
                 "Map_name": map_name,
             }
             completed = self.client.send_simulation_execution_package(message)
+            if completed is None:
+                return False
+            if isinstance(completed, dict):
+                if "Error" in completed.keys():
+                    print("There was an error!")
+                    print(completed["Error"])
+                    return False
+                else:
+                    self.update_submission_list(completed, folder=folder)
+                    assert completed["Status"] == "Completed"
+                    return completed["Status"] == "Completed"
             if "Error" in completed.keys():
                 print("There was an error!")
                 print(completed["Error"])
@@ -2998,6 +3049,7 @@ class SWARM:
             if self.debug:
                 print(f"DEBUG: Sending {message}")
             completed = self.client.send_data_extraction_message(message)
+            print(type(completed))
             if completed is None:
                 return False
             if isinstance(completed, bool):

@@ -20,8 +20,8 @@ from tqdm import tqdm
 from threading import Thread, Event
 from json import JSONDecodeError
 
-from SWARMRDSClientCore.core.validator import activate_license
-from SWARMRDSClientCore.utilities.file_utils import find_file_path, find_folder_path
+from SWARMRDS.core.validator import activate_license
+from SWARMRDS.utilities.file_utils import find_file_path, find_folder_path
 
 # from utils.constants import ENCODING_SCHEME
 ENCODING_SCHEME = "utf-8"
@@ -61,7 +61,7 @@ class SWARMClient(Thread):
         # Save the last response provided
         self.last_response = dict()
         self.machine_id = machineid.hashed_id('swarm-dev')
-
+        print("User File Path {}".format(user_file_path))
         self._file_path = user_file_path
         self.load_license_key()
         self.activate_user_license()
@@ -287,7 +287,7 @@ class SWARMClient(Thread):
 
         return True
 
-    def wait_for_response_packet(self, message_id: int) -> dict:
+    def wait_for_response_packet(self, message_id: int, sim_name: str = None) -> dict:
         """
         Once we send a message, wait for the response from the server.
 
@@ -297,7 +297,6 @@ class SWARMClient(Thread):
         ### Outputs:
         - The returned data as a dictionary, indicating a JSON packet
         """
-        print(message_id)
         response_completed = False
         received_message = None
         received_header = False
@@ -324,10 +323,7 @@ class SWARMClient(Thread):
                         continue
 
                 if int(message["ID"]) == message_id:
-                    print(message["ID"])
-                    print("Received the response message from the server")
                     received_message = message["Body"]
-                    print(received_message)
                     response_completed = True
                     self.message_map[str(message_id)]["Completed"] = True
                 else:
@@ -359,7 +355,17 @@ class SWARMClient(Thread):
                                 self._response_queue.put({"Command": "RunSimulation", "Message": error})
                             assert AssertionError("Received a critical error!")
                     
-                    # assert ValueError("Unknown message id!")
+                if self._response_queue is not None:
+                    shutdown = self._check_response_queue()
+                    if shutdown:
+                        # Close the socket, which alerts the server
+                        # that we are shutting down.
+                        self.socket.close()
+                        response_completed = True
+                        received_message = {
+                                "Status": "Client ended simulation!",
+                                "Sim_name": sim_name
+                            }
             except BlockingIOError:
                 # Ensure this thread does not cause the computer
                 # to take off!
@@ -371,9 +377,6 @@ class SWARMClient(Thread):
             except OSError as error:
                 print(error)
                 break
-            # except KeyboardInterrupt:
-            #     self.socket.close()
-            #     break
             except JSONDecodeError:
                 pass
                 # print("DEBUG JSON Decoding Error")
@@ -389,6 +392,33 @@ class SWARMClient(Thread):
         if received_message == None:
             assert ValueError("We did not receive a message in the response")
         return received_message
+
+    def _check_response_queue(self) -> None:
+        """
+        Check the response queue for a specific message related to
+        shutting down the system.
+
+        Message should be:
+        {
+            "Command": "Shutdown",
+            "ID": "Client",
+            "Message": "Shutdown"
+        }
+        """
+        # Poll the queue for a message with a timeout of 0.1 seconds,
+        # and check whether the message is a shutdown message. If it is
+        # not, then put the message back on the queue and return. If it
+        # is the message, then return True, else return False
+        try:
+            message = self._response_queue.get(timeout=0.1)
+            if message["Command"] == "Shutdown":
+                self.shutdown_requested.set()
+                return True
+            else:
+                self._response_queue.put(message)
+                return False
+        except Exception:
+            return False
 
     def wait_for_response_bytes(self, message_id: int) -> bytearray:
         """
@@ -625,9 +655,9 @@ class SWARMClient(Thread):
           this feature.
         """
         if self._file_path is not None:
-            file_path = self._file_path + "/SWARMRDSClientCore/core/SupportedSoftwareModules.json"
+            file_path = self._file_path + "/SWARMRDS/core/SupportedSoftwareModules.json"
         else:
-            file_path = find_file_path("SupportedSoftwareModules.json", "SWARMRDSClientCore/core")
+            file_path = find_file_path("SupportedSoftwareModules.json", "SWARMRDS/core")
         with open(file_path, "r") as file:
             supported_modules = json.load(file)["SupportedModules"]
 
@@ -650,9 +680,9 @@ class SWARMClient(Thread):
         print("Querying Supported List")
         print(module_name, class_name)
         if self._file_path is not None:
-            file_path = self._file_path + "/SWARMRDSClientCore/core/SupportedSoftwareModules.json"
+            file_path = self._file_path + "/SWARMRDS/core/SupportedSoftwareModules.json"
         else:
-            file_path = find_file_path("SupportedSoftwareModules.json", "SWARMRDSClientCore/core")
+            file_path = find_file_path("SupportedSoftwareModules.json", "SWARMRDS/core")
         with open(file_path, "r") as file:
             supported_modules = json.load(file)["SupportedModules"]
 
@@ -698,7 +728,7 @@ class SWARMClient(Thread):
             print("DEBUG Sending execution message to server")
             sent = self.send_message(json_str)
 
-            completed = self.wait_for_response_packet(self.message_id)
+            completed = self.wait_for_response_packet(self.message_id, json_file["Sim_name"])
             assert completed
             # Only increment to the next message id if we know the last message
             # was sent.
@@ -709,6 +739,7 @@ class SWARMClient(Thread):
             return completed
         except AssertionError:
             print("Simulation failed to be completed!")
+            return False
         except Exception as error:
             print(error)
             return False
@@ -770,15 +801,19 @@ class SWARMClient(Thread):
             raw_img_bytes = self.wait_for_response_bytes(self.message_id)
             if raw_img_bytes:
                 if self._file_path is not None:
+                    print(self._file_path)
                     file_path = self._file_path
                 else:
+                    print("DEBUG Using the current working directory")
                     file_path = os.getcwd()
+                
+                print(file_path)
                 dirs = os.listdir(file_path)
+                print("DEBUG dirs: {}".format(dirs))
                 if not "data" in dirs:
-                    os.makedirs(file_path + "data")
+                    os.makedirs(file_path + "/data")
                     # subprocess.run(["mkdir", "-p", "{}/data".format(os.getcwd())])
                 # TODO Make this either a tar of a zip file
-
                 with open("{}/data/{}_data.tar.gz".format(file_path, message["SimName"]), "wb") as file:
                     file.write(raw_img_bytes)
                 

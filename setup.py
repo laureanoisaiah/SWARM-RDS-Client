@@ -9,24 +9,13 @@
 from setuptools import setup
 
 setup(
-    name="SWARMRDSClientCore",
+    name='SWARMRDS',
     version="1.4.0",
-    packages=[
-        "SWARMRDSClientCore",
-        "SWARMRDSClientCore/core",
-        "SWARMRDSClientCore/utilities",
-        "SWARMRDSClientCore/user_code",
-    ],
-    install_requires=[
-        "matplotlib",
-        "tqdm",
-        "py-machineid",
-        "requests",
-        "pandas"
-    ],
+    packages=["SWARMRDS", "SWARMRDS/core", "SWARMRDS/utilities"],
+    install_requires=['matplotlib', 'tqdm', "py-machineid", "requests", "pandas", "requests"],
     url="https://codexlabsllc.github.io/SWARM-RDS-Client-Dev/",
     description="SWARM RDS Client",
     long_description="""\
 SWARM RDS Client\
-""",
+"""
 )
