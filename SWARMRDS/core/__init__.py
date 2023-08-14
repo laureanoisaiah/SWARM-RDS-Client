@@ -9,3 +9,4 @@
 from .client import *
 from .swarm import *
 from .validator import *
+from .vehicle_profile_validator import *

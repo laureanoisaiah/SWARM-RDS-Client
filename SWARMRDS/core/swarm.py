@@ -13,6 +13,7 @@ import os
 import glob
 import ipaddress
 import time
+import typing
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
@@ -1131,6 +1132,7 @@ class SWARM:
                             "SoftwareModules",
                             "StartingPosition",
                             "VehicleOptions",
+                            "VehiclePhysicsProfile"
                         ]
                         valid_agent_sections.sort()
                         try:
@@ -1151,6 +1153,8 @@ class SWARM:
                                     raise AssertionError(
                                         "Vehicle parameter must be Multirotor. Support for different vehicle types coming soon!"
                                     )
+                            elif section_name == "VehiclePhysicsProfile":
+                                self._validate_vehicle_physics_profile(section, agent_options["Vehicle"])
                             elif section_name == "VehicleOptions":
                                 if not isinstance(section, dict):
                                     raise AssertionError(
@@ -1316,6 +1320,73 @@ class SWARM:
             print(error)
             statement = error
             return False, str(error)
+
+    def _validate_vehicle_physics_profile(self, vehicle_physics_profile: str, vehicle_type: str):
+        """
+        Validate that the provided vehicle physics profile has been
+        defined in the VehicleProfiles.json file in the vehicle_profiles
+        folder.
+
+        ### Inputs:
+        ----
+        `vehicle_physics_profile` : str\n
+        The vehicle physics profile to validate.
+
+        `vehicle_type` : str\n
+        The vehicle type to validate.
+
+        ### Returns:
+        ----
+        `valid` : bool\n
+        """
+        if not isinstance(vehicle_physics_profile, str):
+            raise AssertionError(
+                "Error!\n\nThe vehicle physics profile must be of type str.\nYour input was of type {}".format(
+                    type(vehicle_physics_profile).__name__
+                )
+            )
+        vehicle_profiles = self._retrieve_valid_vehicle_physics_profiles(vehicle_type)
+        if vehicle_physics_profile not in vehicle_profiles.keys():
+            raise AssertionError(
+                "Error!\n\nThe vehicle physics profile {} is not a valid vehicle physics profile.\nValid vehicle physics profiles are: {}".format(
+                    vehicle_physics_profile, vehicle_profiles.keys()
+                )
+            )
+    
+        # Check that the related json file for the vehicle physics profile exists
+        if self._file_path is not None:
+            file_path = self._file_path + "/vehicle_profiles/{}".format(vehicle_profiles[vehicle_physics_profile])
+        else:
+            file_path = find_file_path(vehicle_profiles[vehicle_physics_profile], "vehicle_profiles")
+        
+        if not os.path.exists(file_path):
+            raise AssertionError(
+                "Error!\n\nThe vehicle physics profile {} is not a valid vehicle physics profile.\nValid vehicle physics profiles are: {}".format(
+                    vehicle_physics_profile, vehicle_profiles.keys()
+                )
+            )
+
+    def _retrieve_valid_vehicle_physics_profiles(self, vehicle_type: str) -> dict:
+        """
+        Retrieve the valid physics profiles for the provided vehicle
+        type.
+        """
+        if self._file_path is not None:
+            file_path = self._file_path + "/vehicle_profiles/VehicleProfiles.json"
+        else:
+            file_path = find_file_path("VehicleProfiles.json", "vehicle_profiles")
+        
+        with open(file_path, "r") as file:
+            json_file = json.load(file)
+        
+        if vehicle_type not in json_file.keys():
+            raise AssertionError(
+                "Error!\n\nThe vehicle type {} is not a valid vehicle type.\nValid vehicle types are: {}".format(
+                    vehicle_type, json_file.keys()
+                )
+            )
+        
+        return json_file[vehicle_type]
 
     def _retrieve_valid_sensor_info(self) -> dict:
         """
@@ -2918,6 +2989,10 @@ class SWARM:
 
             # Always add the IP address so the server knows if we are
             # local or not
+            vehicle_profiles = self._generate_vehicle_profile_list(settings)
+
+            # Always add the IP address so the server knows if we are
+            # local or not
             message = {
                 "Command": "Run Simulation",
                 "Settings": settings,
@@ -2926,6 +3001,7 @@ class SWARM:
                 "Sim_name": sim_name,
                 "Map_name": map_name,
                 "IPAddress": ip_address,
+                "VehicleProfiles": vehicle_profiles
             }
 
             connected = self.client.connect()
@@ -2954,6 +3030,78 @@ class SWARM:
             return False
         except Exception:
             traceback.print_exc()
+
+    def _generate_vehicle_profile_list(self, settings: str) -> dict:
+        """
+        Generate the VehicleProfiles structure to pass the appropriate
+        vehicle profiles to the server.
+
+        ### Inputs:
+        - settings [str] The settings file
+
+        ### Outputs:
+        - Returns the VehicleProfiles structure
+        """
+        settings = json.loads(settings)
+        supported_profiles = self._get_supported_vehicle_profiles()
+        vehicle_profiles = {"Vehicles": {}, "Profiles": {}}
+        
+        for agent_name, agent_info in settings["Agents"].items():
+            vehicle_type = agent_info["Vehicle"]
+            vehicle_profiles["Vehicles"][agent_name] = agent_info["VehiclePhysicsProfile"]
+            if agent_info["VehiclePhysicsProfile"] not in vehicle_profiles["Profiles"].keys():
+                # Add the profile name, then read in the Vehicle Profile and load it as a dict
+                vehicle_profile = self._load_vehicle_profile(supported_profiles[vehicle_type][agent_info["VehiclePhysicsProfile"]])
+                if vehicle_profile is None:
+                    if self._response_queue is not None:
+                        self._response_queue.put({"Command": "RunSimulation", "Message": "Could not load the vehicle profile with name {}!".format(agent_info["VehiclePhysicsProfile"])})
+                    print("Could not load the vehicle profile!")
+                    return None
+                vehicle_profiles["Profiles"][agent_info["VehiclePhysicsProfile"]] = vehicle_profile
+        
+        print("DEBUG Vehicle Profiles to send are: {}".format(json.dumps(vehicle_profiles, indent=4)))
+        return vehicle_profiles
+
+    def _load_vehicle_profile(self, file_name: str) -> dict:
+        """
+        Load the vehicle profile based upon the file name
+
+        ### Inputs:
+        - file_name [str] The name of the vehicle profile to load
+
+        ### Outputs:
+        - Returns the vehicle profile as a dict
+        """
+        if self._file_path is not None:
+            file_path = self._file_path + "/vehicle_profiles/" + file_name
+        else:
+            file_path = find_file_path(file_name, "vehicle_profiles")
+        
+        try:
+            with open(file_path, "r") as f:
+                vehicle_profile = json.load(f)
+        
+            return vehicle_profile
+        except FileNotFoundError:
+            print(f"Could not find {file_name} in the vehicle_profiles folder!")
+            return None
+
+    def _get_supported_vehicle_profiles(self) -> list:
+        """
+        Get the supported vehicle profiles.
+
+        ### Outputs:
+        - Returns a list of supported vehicle profiles
+        """
+        if self._file_path is not None:
+            file_path = self._file_path + "/vehicle_profiles/VehicleProfiles.json"
+        else:
+            file_path = find_file_path("VehicleProfiles.json", "vehicle_profiles")
+        
+        with open(file_path, "r") as f:
+            vehicle_profiles = json.load(f)
+        
+        return vehicle_profiles
 
     def run_view_only_simulation(
         self, map_name: str, sim_name: str, folder: str = "settings"

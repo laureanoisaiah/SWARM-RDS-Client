@@ -116,6 +116,16 @@
                 "SWARMOccupancyMap": [
                     "OccupancyMap"
                 ]
+            },
+            "DefaultIO": {
+                "Publishes": {
+                    "SWARMOccupancyMap": [
+                        "OccupancyMap"
+                    ]
+                },
+                "Subscribes": {
+                    "SWARMOccupancyMap": []
+                }
             }
         },
         "HighLevelBehavior": {
@@ -128,6 +138,8 @@
                     "completed_waypoint_distance": {
                         "type": "float",
                         "description": "The distance to consider a waypoint completed in meters",
+                        "Default": 1.25,
+                        "Unit": "m",
                         "range": [
                             0.1,
                             3.0
@@ -146,6 +158,18 @@
                     "Heading",
                     "Speed"
                 ]
+            },
+            "DefaultIO": {
+                "Publishes": {
+                    "PathFollowing": [
+                        "MovementCommand"
+                    ]
+                },
+                "Subscribes": {
+                    "PathFollowing": [
+                        "AgentState"
+                    ]
+                }
             }
         },
         "LowLevelPathPlanning": {
@@ -163,6 +187,8 @@
                     "default_speed": {
                         "type": "float",
                         "description": "[m/s] The default speed the trajectory should be planned for in meters per second",
+                        "Default": 3.0,
+                        "Unit": "m/s",
                         "range": [
                             0.5,
                             10.0
@@ -211,6 +237,8 @@
                 "completed_waypoint_distance": {
                     "type": "float",
                     "description": "The distance in meters to deem a waypoint 'completed'",
+                    "Default": 0.25,
+                    "Unit": "m",
                     "range": [
                         0.1,
                         5.0
@@ -219,9 +247,37 @@
                 "TakeoffAltitude": {
                     "type": "float",
                     "description": "The distance above the ground in meters to takeoff",
+                    "Default": 1.0,
+                    "Unit": "m",
                     "range": [
                         0.1,
                         5.0
+                    ]
+                }
+            },
+            "DefaultIO": {
+                "Publishes": {
+                    "PassThroughPlanner": [],
+                    "MinSnapTrajectoryPlanner": [],
+                    "PassThroughTrajectoryPlanner": [],
+                    "LinePlanner": []
+                },
+                "Subscribes": {
+                    "PassThroughPlanner": [
+                        "AgentState",
+                        "MovementCommand"
+                    ],
+                    "MinSnapTrajectoryPlanner": [
+                        "AgentState",
+                        "Trajectory"
+                    ],
+                    "PassThroughTrajectoryPlanner": [
+                        "AgentState",
+                        "Trajectory"
+                    ],
+                    "LinePlanner": [
+                        "AgentState",
+                        "MovementCommand"
                     ]
                 }
             }
@@ -236,6 +292,8 @@
                     "resolution": {
                         "type": "float",
                         "description": "The Resolution of the Voxel Grid map in meters",
+                        "Default": 0.25,
+                        "Unit": "m",
                         "range": [
                             0.1,
                             5.0
@@ -246,6 +304,10 @@
                         "description": "The X and Y coordinates that are the goal in NED in meters",
                         "length": 2,
                         "field_data_type": "float",
+                        "Default": [
+                            0.0,
+                            0.0
+                        ],
                         "labels": [
                             "X",
                             "Y"
@@ -287,7 +349,6 @@
                     }
                 }
             },
-            
             "ValidInputArgs": {
                 "AStar2D": [
                     "OccupancyMap"
@@ -297,6 +358,19 @@
                 "AStar2D": [
                     "Trajectory"
                 ]
+            },
+            "DefaultIO": {
+                "Publishes": {
+                    "AStar2D": [
+                        "Trajectory"
+                    ]
+                },
+                "Subscribes": {
+                    "AStar2D": [
+                        "OccupancyMap",
+                        "AgentState"
+                    ]
+                }
             }
         },
         "SensorDataCollector": {
@@ -320,6 +394,16 @@
                         "csv"
                     ]
                 }
+            },
+            "DefaultIO": {
+                "Publishes": {
+                    "SensorDataCollector": []
+                },
+                "Subscribes": {
+                    "SensorDataCollector": [
+                        "AgentState"
+                    ]
+                }
             }
         },
         "Detector": {
@@ -335,6 +419,18 @@
             },
             "ValidReturnValues": {
                 "SWARMDetector": []
+            },
+            "DefaultIO": {
+                "Publishes": {
+                    "SWARMDetector": [
+                        "Detection"
+                    ]
+                },
+                "Subscribes": {
+                    "SWARMDetector": [
+                        "Image"
+                    ]
+                }
             }
         },
         "ObstacleAvoidance": {
@@ -371,6 +467,18 @@
                     "LinearVelocity",
                     "Heading"
                 ]
+            },
+            "DefaultIO": {
+                "Publishes": {
+                    "SlopeDetection": [
+                        "MovementCommand"
+                    ]
+                },
+                "Subscribes": {
+                    "SlopeDetection": [
+                        "AgentState"
+                    ]
+                }
             }
         },
         "TorchPerception": {
@@ -511,7 +619,19 @@
             "ValidClassNames": [],
             "ValidParameters": {},
             "ValidInputArgs": {},
-            "ValidReturnValues": {}
+            "ValidReturnValues": {},
+            "DefaultIO": {
+                "Publishes": {
+                    "Perception": [
+                        "Detection"
+                    ]
+                },
+                "Subscribes": {
+                    "Perception": [
+                        "Image"
+                    ]
+                }
+            }
         }
     }
 }

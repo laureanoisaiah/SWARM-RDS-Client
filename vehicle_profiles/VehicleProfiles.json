@@ -1,0 +1,6 @@
+{
+    "Multirotor": {
+        "DefaultMultirotor": "DefaultMultirotor.json",
+        "CodexX500": "CodexX500.json"
+    }
+}

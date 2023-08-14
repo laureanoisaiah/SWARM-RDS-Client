@@ -1,0 +1,279 @@
+{
+    "Multirotor": {
+        "ValidSubSections": ["Frame", "Battery", "Rotors", "Gravity"],
+        "TotalMass": {
+            "Type": "float",
+            "Default": 1.0,
+            "Min": 0.40,
+            "Max": 50.0,
+            "Unit": "kg",
+            "Description": "The total mass of the vehicle, including all compoennts and payload."
+        },
+        "Gravity": {
+            "ValidSubSections": [],
+            "X": {
+                "Type": "float",
+                "Default": 0.0,
+                "Min": -10.0,
+                "Max": 10.0,
+                "Unit": "m/s^2",
+                "Description": "The X component of the gravity vector."
+            },
+            "Y": {
+                "Type": "float",
+                "Default": 0.0,
+                "Min": -10.0,
+                "Max": 10.0,
+                "Unit": "m/s^2",
+                "Description": "The Y component of the gravity vector."
+            },
+            "Z": {
+                "Type": "float",
+                "Default": -9.81,
+                "Min": -10.0,
+                "Max": 10.0,
+                "Unit": "m/s^2",
+                "Description": "The Z component of the gravity vector."
+            }
+        },
+        "Frame": {
+            "ValidSubSections": ["BodyBox"],
+            "BodyBox": {
+                "ValidSubSections": [],
+                "Description": "The frame of the vehicle, as defined by a Box.",
+                "X": {
+                    "Type": "float",
+                    "Default": 0.18,
+                    "Min": 0.05,
+                    "Max": 1.0,
+                    "Unit": "m",
+                    "Description": "The X dimension of the Box that defines the frame, as measured from the center point of the Box."
+                },
+                "Y": {
+                    "Type": "float",
+                    "Default": 0.18,
+                    "Min": 0.05,
+                    "Max": 1.0,
+                    "Unit": "m",
+                    "Description": "The Y dimension of the Box that defines the frame, as measured from the center point of the Box."
+                },
+                "Z": {
+                    "Type": "float",
+                    "Default": 0.05,
+                    "Min": 0.05,
+                    "Max": 1.0,
+                    "Unit": "m",
+                    "Description": "The Z dimension of the Box that defines the frame, as measured from the center point of the Box."
+                }
+            },
+            "LinearDragCoefficient": {
+                "Type": "float",
+                "Default": 0.325,
+                "Min": 0.0,
+                "Max": 1.0,
+                "Unit": "N/(m/s)",
+                "Description": "The linear drag coefficient of the vehicle."
+            },
+            "AngularDragCoefficient": {
+                "Type": "float",
+                "Default": 0.325,
+                "Min": 0.0,
+                "Max": 1.0,
+                "Unit": "N/(m/s)",
+                "Description": "The angular drag coefficient of the vehicle."
+            },
+            "Mass": {
+                "Type": "float",
+                "Default": 0.78,
+                "Min": 0.1,
+                "Max": 10.0,
+                "Unit": "kg",
+                "Description": "The mass of the Frame, not including the payload."
+            }
+        },
+        "SimulationRateHz": {
+            "Type": "float",
+            "Default": 100.0,
+            "Min": 50.0,
+            "Max": 400.0,
+            "Unit": "Hz",
+            "Description": "The rate at which the simulation is run."
+        },
+        "UseDefinedInertia": {
+            "Type": "bool",
+            "Default": false,
+            "Description": "If true, the inertia tensor will be set to the value defined in the Inertia section. If false, the inertia tensor will be calculated based on the Frame and Mass."
+        },
+        "Battery": {
+            "ValidSubSections": ["Dimensions"],
+            "Mass": {
+                "Type": "float",
+                "Default": 0.4,
+                "Min": 0.05,
+                "Max": 10.0,
+                "Unit": "kg",
+                "Description": "The mass of the battery."
+            },
+            "Capacity": {
+                "Type": "int",
+                "Default": 1200,
+                "Min": 100,
+                "Max": 5000,
+                "Unit": "mAh",
+                "Description": "The capacity of the battery in milli Amp Hours."
+            },
+            "NominalVoltage": {
+                "Type": "float",
+                "Default": 0.0,
+                "Min": 0.0,
+                "Max": 100.0,
+                "Unit": "V",
+                "Description": "The voltage of the battery."
+            },
+            "InternalResistance": {
+                "Type": "float",
+                "Default": 0.0,
+                "Min": 0.0,
+                "Max": 100.0,
+                "Unit": "Ohm",
+                "Description": "The internal resistance of the battery."
+            },
+            "DischargeRateC": {
+                "Type": "int",
+                "Default": 15,
+                "Min": 6,
+                "Max": 30,
+                "Unit": "C",
+                "Description": "The discharge rate of the battery."
+            },
+            "Dimensions": {
+                "ValidSubSections": [],
+                "Description": "The dimensions of the battery, as defined by a Box.",
+                "X": {
+                    "Type": "float",
+                    "Default": 0.0,
+                    "Min": 0.0,
+                    "Max": 1.0,
+                    "Unit": "m",
+                    "Description": "The X dimension of the Box that defines the battery, as measured from the center point of the Box."
+                },
+                "Y": {
+                    "Type": "float",
+                    "Default": 0.0,
+                    "Min": 0.0,
+                    "Max": 1.0,
+                    "Unit": "m",
+                    "Description": "The Y dimension of the Box that defines the battery, as measured from the center point of the Box."
+                },
+                "Z": {
+                    "Type": "float",
+                    "Default": 0.0,
+                    "Min": 0.0,
+                    "Max": 1.0,
+                    "Unit": "m",
+                    "Description": "The Z dimension of the Box that defines the battery, as measured from the center point of the Box."
+                }
+            }
+        },
+        "Rotors": {
+            "ValidSubSections": [],
+            "RotorCount": {
+                "Type": "int",
+                "Default": 4,
+                "Min": 4,
+                "Max": 8,
+                "Unit": "N/A",
+                "ValidEntries": [4, 6, 8],
+                "Description": "The number of rotors on the vehicle."
+            },
+            "MaxRPM": {
+                "Type": "float",
+                "Default": 6669.337,
+                "Min": 0.0,
+                "Max": 20000.0,
+                "Unit": "RPM",
+                "Description": "The maximum RPM of the rotors."
+            },
+            "MotorMass": {
+                "Type": "float",
+                "Default": 0.05,
+                "Min": 0.0,
+                "Max": 1.0,
+                "Unit": "kg",
+                "Description": "The mass of a single motor assembly."
+            },
+            "ThrustCoefficient": {
+                "Type": "float",
+                "Default": 0.1099,
+                "Min": 0.0,
+                "Max": 1.0,
+                "Unit": "N/(rad/s)^2",
+                "Description": "The thrust coefficient of the rotors."
+            },
+            "PowerCoefficient": {
+                "Type": "float",
+                "Default": 0.0,
+                "Min": 0.0,
+                "Max": 1.0,
+                "Unit": "W/(rad/s)^3",
+                "Description": "The power coefficient of the rotors."
+            },
+            "AirDensity": {
+                "Type": "float",
+                "Default": 1.225,
+                "Min": 0.0,
+                "Max": 10.0,
+                "Unit": "kg/m^3",
+                "Description": "The nominal air density at the average operational altitude."
+            },
+            "PropellerDiameter": {
+                "Type": "float",
+                "Default": 0.1,
+                "Min": 0.1,
+                "Max": 1.0,
+                "Unit": "m",
+                "Description": "The diameter of the propellers."
+            },
+            "PropellerPitch": {
+                "Type": "float",
+                "Default": 0.0,
+                "Min": -90.0,
+                "Max": 90.0,
+                "Unit": "deg",
+                "Description": "The pitch of the propellers."
+            },
+            "PropellerHeight": {
+                "Type": "float",
+                "Default": 0.01,
+                "Min": 0.005,
+                "Max": 1.0,
+                "Unit": "m",
+                "Description": "The height of the propellers as measured by the cross section of the propeller"
+            },
+            "ControllerSignalFilter": {
+                "Type": "float",
+                "Default": 0.005,
+                "Min": 0.0001,
+                "Max": 1.0,
+                "Unit": "N/A",
+                "Description": "The filter to apply to the controller signal."
+            },
+            "PropellerMass": {
+                "Type": "float",
+                "Default": 0.01,
+                "Min": 0.001,
+                "Max": 1.0,
+                "Unit": "kg",
+                "Description": "The mass of a single propeller."
+            },
+            "ArmLength": {
+                "Type": "float",
+                "Default": 0.2275,
+                "Min": 0.1,
+                "Max": 1.0,
+                "Unit": "m",
+                "Description": "The length of an individual arm on the UAV."
+            }
+        }
+    }
+}

@@ -6,6 +6,7 @@
 #
 # Description: Core Execution of the forward-facing gui
 # =============================================================================
+import copy
 import socket
 import json
 import time
@@ -358,10 +359,14 @@ class SWARMClient(Thread):
                 if self._response_queue is not None:
                     shutdown = self._check_response_queue()
                     if shutdown:
+                        message_packet = dict(ID=self.message_id,
+                                  Type="Singular", Body=None)
+                        message_packet["Body"] = "Connection Ended"
+                        self.send_message(json.dumps(message_packet).encode(ENCODING_SCHEME))
                         # Close the socket, which alerts the server
                         # that we are shutting down.
-                        self.socket.close()
-                        response_completed = True
+                        # self.socket.close()
+                        # response_completed = True
                         received_message = {
                                 "Status": "Client ended simulation!",
                                 "Sim_name": sim_name

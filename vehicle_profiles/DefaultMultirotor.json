@@ -1,0 +1,48 @@
+{
+    "Physics": {
+        "TotalMass": 1.05,
+        "Gravity": {
+            "X": 0.0,
+            "Y": 0.0,
+            "Z": -9.81
+        },
+        "Frame": {
+            "BodyBox": {
+                "X": 0.18,
+                "Y": 0.11,
+                "Z": 0.05
+            },
+            "LinearDragCoefficient": 0.33,
+            "AngularDragCoefficient": 0.03,
+            "Mass": 0.78
+        },
+        "SimulationRateHz": 400.0,
+        "UseDefinedInertia": false,
+        "Battery": {
+            "Mass": 0.5,
+            "Capacity": 2200,
+            "NominalVoltage": 11.1,
+            "InternalResistance": 0.1,
+            "DischargeRateC": 25,
+            "Dimensions": {
+                "X": 0.1,
+                "Y": 0.1,
+                "Z": 0.1
+            }
+        },
+        "Rotors": {
+            "RotorCount": 4,
+            "MaxRPM": 6396.67,
+            "MotorMass": 0.06,
+            "ThrustCoefficient": 0.11,
+            "PowerCoefficient": 0.04,
+            "AirDensity": 1.23,
+            "PropellerDiameter": 0.23,
+            "PropellerPitch": 0.1,
+            "PropellerHeight": 0.01,
+            "ControllerSignalFilter": 0.01,
+            "PropellerMass": 0.01,
+            "ArmLength": 0.23
+        }
+    }
+}
