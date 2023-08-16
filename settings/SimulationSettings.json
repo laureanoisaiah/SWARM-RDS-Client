@@ -1,7 +1,7 @@
 {
     "ID": 0,
-    "SimulationName": "example",
-    "RunLength": 140.0,
+    "SimulationName": "CustomDrone1",
+    "RunLength": 27,
     "Scenario": {
         "Name": "DataCollection",
         "Options": {
@@ -24,27 +24,32 @@
     "Agents": {
         "Drone1": {
             "Vehicle": "Multirotor",
-            "VehicleOptions": {},
+            "VehiclePhysicsProfile": "CodexX500",
             "AutoPilot": "SWARM",
+            "VehicleOptions": {
+                "RunROSNode": false,
+                "PlanningCoordinateFrame": "NED"
+            },
             "Sensors": {
                 "Cameras": {
                     "Camera1": {
-                        "Enabled": false,
-                        "PublishPose": false,
-                        "X": 0.35,
+                        "Enabled": true,
+                        "X": 0.0,
                         "Y": 0.0,
                         "Z": 0.0,
                         "Roll": 0.0,
                         "Pitch": 0.0,
                         "Yaw": 0.0,
-                        "ImageType": "Scene",
                         "Width": 640,
                         "Height": 480,
                         "FOV_Degrees": 90.0,
-                        "FramesPerSecond": 24.0,
-                        "Record": true,
+                        "FramesPerSecond": 30,
+                        "Record": false,
+                        "VideoName": "",
+                        "PublishPose": false,
                         "OutputType": "Video",
-                        "VideoName": "Camera1_Capture"
+                        "ImageType": "Scene",
+                        "Method": "Colosseum"
                     }
                 }
             },
@@ -52,60 +57,64 @@
                 "Name": "PID",
                 "Gains": {
                     "P": 0.95,
-                    "I": 0.2,
-                    "D": 0.3
+                    "I": 0.05,
+                    "D": 0.1
                 }
             },
             "StartingPosition": {
                 "X": 0.0,
                 "Y": 0.0,
-                "Z": -0.01,
+                "Z": 0.0,
                 "Roll": 0.0,
                 "Pitch": 0.0,
                 "Yaw": 0.0
             },
             "SoftwareModules": {
-                "HighLevelBehavior": {
+                "LowLevelPathPlanning": {
                     "Algorithm": {
+                        "ClassName": "PassThroughPlanner",
+                        "Parameters": {},
                         "Level": 1,
                         "States": [],
+                        "InputArgs": [
+                            "MovementCommand"
+                        ],
+                        "ReturnValues": [
+                            "MovementCommand"
+                        ]
+                    },
+                    "Parameters": {
+                        "completed_waypoint_distance": 0.1,
+                        "TakeoffAltitude": 0.1
+                    },
+                    "Publishes": [],
+                    "Subscribes": [
+                        "AgentState",
+                        "MovementCommand"
+                    ]
+                },
+                "HighLevelBehavior": {
+                    "Algorithm": {
+                        "ClassName": "PathFollowing",
                         "Parameters": {
                             "completed_waypoint_distance": 1.25
                         },
+                        "Level": 1,
+                        "States": [],
                         "InputArgs": [
                             "Trajectory"
                         ],
-                        "ClassName": "PathFollowing",
                         "ReturnValues": [
                             "Position",
                             "Heading",
                             "Speed"
                         ]
                     },
+                    "Parameters": {},
                     "Publishes": [
                         "MovementCommand"
                     ],
                     "Subscribes": [
-                        "AgentState"
-                    ]
-                },
-                "LowLevelPathPlanning": {
-                    "Algorithm": {
-                        "Level": 1,
-                        "States": [],
-                        "Parameters": {},
-                        "InputArgs": [
-                            "MovementCommand"
-                        ],
-                        "ClassName": "PassThroughPlanner",
-                        "ReturnValues": [
-                            "MovementCommand"
-                        ]
-                    },
-                    "Parameters": {},
-                    "Publishes": [],
-                    "Subscribes": [
-                        "MovementCommand",
                         "AgentState"
                     ]
                 }

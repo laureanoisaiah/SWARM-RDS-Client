@@ -1,27 +1,25 @@
 {
     "ID": 0,
-    "SimulationName": "example",
-    "RunLength": 120.0,
+    "SimulationName": "HelloWorld",
+    "RunLength": 140.0,
     "Scenario": {
-        "Name": "Navigation",
+        "Name": "DataCollection",
         "Options": {
             "MultiLevel": false,
             "LevelNames": [
                 "Level1"
-            ],
-            "GoalPoint": {
-                "Drone1": {
-                    "X": 20.0,
-                    "Y": 10.0,
-                    "Z": -3.0
-                }
-            }
+            ]
         }
     },
     "Environment": {
-        "Name": "Blocks",
+        "Name": "SWARMHome",
         "StartingLevelName": "Level1",
-        "StreamVideo": true
+        "StreamVideo": true,
+        "Options": {
+            "Doors": "Open",
+            "Lights": "Off",
+            "FurnitureRandomization": "On"
+        }
     },
     "Data": {
         "VehicleState": {
@@ -29,14 +27,17 @@
         },
         "Video": {
             "Format": "MP4",
-            "VideoName": "TestVideo"
+            "VideoName": "TestVideo",
+            "CameraName": "Camera1"
         }
     },
     "Agents": {
         "Drone1": {
             "Vehicle": "Multirotor",
+            "VehiclePhysicsProfile": "CodexX500",
             "VehicleOptions": {
-                
+                "RunROSNode": false,
+                "PlanningCoordinateFrame": "NED"
             },
             "AutoPilot": "SWARM",
             "Sensors": {
@@ -50,13 +51,15 @@
                         "Roll": 0.0,
                         "Pitch": 0.0,
                         "Yaw": 0.0,
-                        "Settings": {
-                            "ImageType": "Scene",
-                            "Width": 1280,
-                            "Height": 720,
-                            "FOV_Degrees": 90.0,
-                            "FramesPerSecond": 24.0
-                        }
+                        "ImageType": "Scene",
+                        "Width": 640,
+                        "Height": 480,
+                        "FOV_Degrees": 90.0,
+                        "FramesPerSecond": 24.0,
+                        "Record": true,
+                        "VideoName": "",
+                        "OutputType": "Video",
+                        "Method": "Colosseum"
                     }
                 }
             },
@@ -64,19 +67,43 @@
                 "Name": "SWARMBase",
                 "Gains": {
                     "P": 0.95,
-                    "I": 0.1,
-                    "D": 0.25
+                    "I": 0.05,
+                    "D": 0.05
                 }
             },
             "StartingPosition": {
                 "X": 0.0,
                 "Y": 0.0,
-                "Z": -0.01,
+                "Z": 0.0,
                 "Roll": 0.0,
                 "Pitch": 0.0,
                 "Yaw": 0.0
             },
             "SoftwareModules": {
+                "HighLevelBehavior": {
+                    "Algorithm": {
+                        "Level": 1,
+                        "States": [],
+                        "Parameters": {
+                            "completed_waypoint_distance": 0.25
+                        },
+                        "InputArgs": [
+                            "Trajectory"
+                        ],
+                        "ClassName": "PathFollowing",
+                        "ReturnValues": [
+                            "Position",
+                            "Heading",
+                            "Speed"
+                        ]
+                    },
+                    "Publishes": [
+                        "MovementCommand"
+                    ],
+                    "Subscribes": [
+                        "AgentState"
+                    ]
+                },
                 "LowLevelPathPlanning": {
                     "Algorithm": {
                         "Level": 1,
