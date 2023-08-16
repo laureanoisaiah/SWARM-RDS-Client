@@ -612,6 +612,18 @@
                 "TorchCustomModel": [
                     "Detection"
                 ]
+            },
+            "DefaultIO": {
+                "Publishes": {
+                    "Perception": [
+                        "Detection"
+                    ]
+                },
+                "Subscribes": {
+                    "Perception": [
+                        "Image"
+                    ]
+                }
             }
         },
         "Perception": {
