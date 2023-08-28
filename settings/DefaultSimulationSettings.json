@@ -14,7 +14,10 @@
     "Environment": {
         "Name": "MountainVillage",
         "StartingLevelName": "Level1",
-        "StreamVideo": true
+        "StreamVideo": true,
+        "Options": {
+            
+        }
     },
     "Data": {
         "VehicleState": {
