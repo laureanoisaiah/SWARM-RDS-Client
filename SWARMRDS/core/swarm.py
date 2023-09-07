@@ -2302,7 +2302,7 @@ class SWARM:
             )
 
         # Provides a list of acceptable inputs from the User
-        valid_option_entries = valid_options[option_name]["ValidOptions"]
+        valid_option_entries = valid_options[option_name]["ValidEntries"]
 
         if option not in valid_option_entries:
             raise AssertionError(

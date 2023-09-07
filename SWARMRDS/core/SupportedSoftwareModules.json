@@ -112,6 +112,9 @@
             "ValidInputArgs": {
                 "SWARMOccupancyMap": []
             },
+            "RequiredSensors": {
+                "SWARMOccupancyMap": []
+            },
             "ValidReturnValues": {
                 "SWARMOccupancyMap": [
                     "OccupancyMap"
@@ -158,6 +161,9 @@
                     "Heading",
                     "Speed"
                 ]
+            },
+            "RequiredSensors": {
+                "PathFollowing": []
             },
             "DefaultIO": {
                 "Publishes": {
@@ -254,6 +260,12 @@
                         5.0
                     ]
                 }
+            },
+            "RequiredSensors": {
+                "PassThroughPlanner": [],
+                "LinePlanner": [],
+                "MinSnapTrajectoryPlanner": [],
+                "PassThroughTrajectoryPlanner": []
             },
             "DefaultIO": {
                 "Publishes": {
@@ -359,6 +371,9 @@
                     "Trajectory"
                 ]
             },
+            "RequiredSensors": {
+                "AStar2D": []
+            },
             "DefaultIO": {
                 "Publishes": {
                     "AStar2D": [
@@ -385,6 +400,12 @@
             },
             "ValidReturnValues": {
                 "SensorDataCollector": []
+            },
+            "RequiredSensors": {
+                "SensorDataCollector": [
+                    "GPS",
+                    "IMU"
+                ]
             },
             "ValidModuleParameters": {
                 "OutputType": {
@@ -420,6 +441,11 @@
             "ValidReturnValues": {
                 "SWARMDetector": []
             },
+            "RequiredSensors": {
+                "SWARMDetector": [
+                    "Camera"
+                ]
+            },
             "DefaultIO": {
                 "Publishes": {
                     "SWARMDetector": [
@@ -436,7 +462,8 @@
         "ObstacleAvoidance": {
             "ValidModuleParameters": {},
             "ValidClassNames": [
-                "SlopeDetection"
+                "SlopeDetection",
+                "SWARMAvoidance"
             ],
             "ValidParameters": {
                 "SlopeDetection": {
@@ -456,26 +483,137 @@
                             85.0
                         ]
                     }
+                },
+                "SWARMAvoidance": {
+                    "min_incline": {
+                        "type": "float",
+                        "description": "The minimum slope of the terrain in degrees to acivate the algorithm.",
+                        "range": [
+                            5.0,
+                            40.0
+                        ],
+                        "default": 15.0
+                    },
+                    "max_incline": {
+                        "type": "float",
+                        "description": "The maximum slope of the terrain in degrees to acivate the algorithm.",
+                        "range": [
+                            50.0,
+                            85.0
+                        ],
+                        "default": 65.0
+                    },
+                    "min_window": {
+                        "type": "float",
+                        "description": "The minimum window size in meters to use for the algorithm.",
+                        "range": [
+                            -5.0,
+                            5.0
+                        ],
+                        "default": 1.0
+                    },
+                    "max_window": {
+                        "type": "float",
+                        "description": "The maximum window size in meters to use for the algorithm.",
+                        "range": [
+                            5.0,
+                            20.0
+                        ],
+                        "default": 10.0
+                    },
+                    "threshold_distance": {
+                        "type": "float",
+                        "description": "The distance in meters to consider an obstacle a threat.",
+                        "range": [
+                            0.5,
+                            10.0
+                        ],
+                        "default": 7.0
+                    },
+                    "threshold_time": {
+                        "type": "float",
+                        "description": "The time in seconds to consider an obstacle a threat.",
+                        "range": [
+                            0.5,
+                            5.0
+                        ],
+                        "default": 1.0
+                    },
+                    "drone_velocity": {
+                        "type": "float",
+                        "description": "The velocity of the drone in meters per second.",
+                        "range": [
+                            0.5,
+                            5.0
+                        ],
+                        "default": 1.0
+                    },
+                    "drone_velocity_forward": {
+                        "type": "float",
+                        "description": "The velocity of the drone in meters per second when moving to the North Direction.",
+                        "range": [
+                            0.5,
+                            5.0
+                        ],
+                        "default": 1.0
+                    },
+                    "drone_velocity_right": {
+                        "type": "float",
+                        "description": "The velocity of the drone in meters per second when moving to the East Direction.",
+                        "range": [
+                            0.5,
+                            5.0
+                        ],
+                        "default": 1.0
+                    },
+                    "drone_velocity_up": {
+                        "type": "float",
+                        "description": "The velocity of the drone in meters per second when moving in the up direction.",
+                        "range": [
+                            0.5,
+                            5.0
+                        ],
+                        "default": 1.0
+                    }
                 }
             },
             "ValidInputArgs": {
-                "SlopeDetection": []
+                "SlopeDetection": [],
+                "SWARMAvoidance": []
+            },
+            "RequiredSensors": {
+                "SlopeDetection": [
+                    "LiDAR"
+                ],
+                "SWARMAvoidance": [
+                    "LiDAR",
+                    "Distance"
+                ]
             },
             "ValidReturnValues": {
                 "SlopeDetection": [
                     "Position",
                     "LinearVelocity",
                     "Heading"
+                ],
+                "SWARMAvoidance": [
+                    "Velcoity"
                 ]
             },
             "DefaultIO": {
                 "Publishes": {
                     "SlopeDetection": [
                         "MovementCommand"
+                    ],
+                    "SWARMAvoidance": [
+                        "MovementCommand"
                     ]
                 },
                 "Subscribes": {
                     "SlopeDetection": [
+                        "AgentState"
+                    ],
+                    "SWARMAvoidance": [
                         "AgentState"
                     ]
                 }
@@ -613,6 +751,14 @@
                     "Detection"
                 ]
             },
+            "RequiredSensors": {
+                "TorchHubModel": [
+                    "Camera"
+                ],
+                "TorchCustomModel": [
+                    "Camera"
+                ]
+            },
             "DefaultIO": {
                 "Publishes": {
                     "Perception": [
@@ -632,6 +778,7 @@
             "ValidParameters": {},
             "ValidInputArgs": {},
             "ValidReturnValues": {},
+            "RequiredSensors": {},
             "DefaultIO": {
                 "Publishes": {
                     "Perception": [
