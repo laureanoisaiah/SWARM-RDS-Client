@@ -7,18 +7,15 @@
         "Options": {
             "MultiLevel": false,
             "LevelNames": [
-                "Home1"
+                "Level1"
             ]
         }
     },
     "Environment": {
-        "Name": "SWARMHome",
-        "StartingLevelName": "Home1",
+        "Name": "MountainVillage",
+        "StartingLevelName": "Level1",
         "StreamVideo": true,
         "Options": {
-            "Doors": "Open",
-            "Lights": "Off",
-            "FurnitureRandomization": "On"
         }
     },
     "Data": {
@@ -29,11 +26,12 @@
     "Agents": {
         "Drone1": {
             "Vehicle": "Multirotor",
+            "VehiclePhysicsProfile": "CodexX500",
             "VehicleOptions": {
                 "UseLocalPX4": true,
                 "RunROSNode": true,
                 "PlanningCoordinateFrame": "ENU",
-                "LocalHostIP": "10.8.0.1"
+                "LocalHostIP": "127.0.0.1"
             },
             "AutoPilot": "PX4",
             "Sensors": {
@@ -63,14 +61,31 @@
                     "Imu1": {
                         "Enabled": true,
                         "Method": "Colosseum",
-                        "PublishingRate": 100.0
+                        "PublishingRate": 100.0,
+                        "AngularRandomWalk": 0.3,
+                        "GyroBiasStabilityTau": 500,
+                        "GyroBiasStability": 4.6,
+                        "VelocityRandomWalk": 0.24,
+                        "AccelBiasStabilityTau": 800,
+                        "AccelBiasStability": 36
                     }
                 },
                 "GPS": {
                     "Gps1": {
                         "Enabled": true,
                         "Method": "Colosseum",
-                        "PublishingRate": 10.0
+                        "PublishingRate": 10.0,
+                        "EphTimeConstant": 0.9,
+                        "EpvTimeConstant": 0.9,
+                        "EphInitial": 25,
+                        "EpvInitial": 25,
+                        "EphFinal": 0.1,
+                        "EpvFinal": 0.1,
+                        "EphMin3d": 3,
+                        "EphMin2d": 4,
+                        "UpdateLatency": 0.2,
+                        "UpdateFrequency": 50,
+                        "StartupDelay": 1.0
                     }
                 },
                 "Magnetometers": {
@@ -79,36 +94,10 @@
                         "Method": "Colosseum",
                         "PublishingRate": 10.0
                     }
-                },
-                "Odometers": {
-                    "Odometer1": {
-                        "Enabled": true,
-                        "Method": "Colosseum",
-                        "PublishingRate": 25.0
-                    }
-                },
-                "Cameras": {
-                    "Camera1": {
-                        "Enabled": true,
-                        "PublishPose": false,
-                        "X": 0.35,
-                        "Y": 0.0,
-                        "Z": 0.0,
-                        "Roll": 0.0,
-                        "Pitch": 0.0,
-                        "Yaw": 0.0,
-                        "Settings": {
-                            "ImageType": "Scene",
-                            "Width": 640,
-                            "Height": 480,
-                            "FOV_Degrees": 90.0,
-                            "FramesPerSecond": 24.0
-                        }
-                    }
                 }
             },
             "Controller": {
-                "Name": "SWARMBase",
+                "Name": "PID",
                 "Gains": {
                     "P": 0.95,
                     "I": 0.02,

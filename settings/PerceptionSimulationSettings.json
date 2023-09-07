@@ -7,13 +7,13 @@
         "Options": {
             "MultiLevel": false,
             "LevelNames": [
-                "Home1"
+                "Level1"
             ]
         }
     },
     "Environment": {
         "Name": "SWARMHome",
-        "StartingLevelName": "Home1",
+        "StartingLevelName": "Level1",
         "StreamVideo": true,
         "Options": {
             "Doors": "Closed",
@@ -23,22 +23,18 @@
     "Data": {
         "VehicleState": {
             "Format": "SWARM"
-        },
-        "Video": {
-            "Format": "MP4",
-            "VideoName": "TestVideo",
-            "CameraName": "Camera1"
         }
     },
     "Agents": {
         "Drone1": {
             "Vehicle": "Multirotor",
+            "VehiclePhysicsProfile": "CodexX500",
             "VehicleOptions": {},
             "AutoPilot": "SWARM",
             "Sensors": {
                 "Cameras": {
                     "Camera1": {
-                        "Enabled": true,
+                        "Enabled": false,
                         "PublishPose": false,
                         "X": 0.35,
                         "Y": 0.0,
@@ -46,18 +42,19 @@
                         "Roll": 0.0,
                         "Pitch": 0.0,
                         "Yaw": 0.0,
-                        "Settings": {
-                            "ImageType": "Scene",
-                            "Width": 640,
-                            "Height": 480,
-                            "FOV_Degrees": 90.0,
-                            "FramesPerSecond": 24.0
-                        }
+                        "ImageType": "Scene",
+                        "Width": 640,
+                        "Height": 480,
+                        "FOV_Degrees": 90.0,
+                        "FramesPerSecond": 24.0,
+                        "Record": true,
+                        "OutputType": "Video",
+                        "VideoName": "Camera1_Capture"
                     }
                 }
             },
             "Controller": {
-                "Name": "SWARMBase",
+                "Name": "PID",
                 "Gains": {
                     "P": 0.95,
                     "I": 0.1,

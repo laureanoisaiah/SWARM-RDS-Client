@@ -61,7 +61,7 @@
                 }
             },
             "Controller": {
-                "Name": "SWARMBase",
+                "Name": "PID",
                 "Gains": {
                     "P": 0.95,
                     "I": 0.05,
