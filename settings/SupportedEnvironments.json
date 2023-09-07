@@ -1,0 +1,46 @@
+{
+    "Environments": {
+        "SWARMHome": {
+            "Levels": [
+                "Level1",
+                "Level2",
+                "Level3"
+            ],
+            "StartingLevel": "Level1",
+            "Options": {
+                "Doors": {
+                    "ValidEntries": ["Open", "Closed"],
+                    "Description": "Select the starting position of all doors in the environment",
+                    "Default": "Closed",
+                    "Type": "str"
+                },
+                "Lights": {
+                    "ValidEntries": ["On", "Off"],
+                    "Description": "Select the starting status for the all lights (lamps, ceiling lights, etc.)",
+                    "Default": "Off",
+                    "Type": "str"
+                },
+                "FurnitureRandomization": {
+                    "ValidEntries": ["On", "Off"],
+                    "Description": "Select whether the furniture should be randomized on every iteration of a simulation",
+                    "Default": "On",
+                    "Type": "str"
+                }
+            }
+        },
+        "Blocks": {
+            "Levels": [
+                "Level1"
+            ],
+            "StartingLevel": "Level1",
+            "Options": {}
+        },
+        "MountainVillage": {
+            "Levels": [
+                "Level1"
+            ],
+            "StartingLevel": "Level1",
+            "Options": {}
+        }
+    }
+}
