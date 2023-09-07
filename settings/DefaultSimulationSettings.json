@@ -27,6 +27,7 @@
     "Agents": {
         "Drone1": {
             "Vehicle": "Multirotor",
+            "VehiclePhysicsProfile": "CodexX500",
             "VehicleOptions": {},
             "AutoPilot": "SWARM",
             "Sensors": {
