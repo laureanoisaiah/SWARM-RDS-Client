@@ -24,16 +24,12 @@
     "Data": {
         "VehicleState": {
             "Format": "SWARM"
-        },
-        "Video": {
-            "Format": "MP4",
-            "VideoName": "TestVideo",
-            "CameraName": "Camera1"
         }
     },
     "Agents": {
         "Drone1": {
             "Vehicle": "Multirotor",
+            "VehiclePhysicsProfile": "CodexX500",
             "VehicleOptions": {},
             "AutoPilot": "SWARM",
             "Sensors": {
@@ -58,7 +54,7 @@
                 }
             },
             "Controller": {
-                "Name": "SWARMBase",
+                "Name": "PID",
                 "Gains": {
                     "P": 0.95,
                     "I": 0.2,
