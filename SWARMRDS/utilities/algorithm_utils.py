@@ -13,6 +13,7 @@ import importlib
 import traceback
 
 from SWARMRDS.utilities.data_classes import AccVec3, GPSPosVec3, PosVec3, Quaternion, VelVec3, AgentState, Trajectory
+from SWARMRDS.utilities.log_utils import UserLogger
 
 PRECISION = 4
 
@@ -62,6 +63,10 @@ class Algorithm():
             "Goal": self.goal
         }
         self.agent_id = None
+        # The log is provided when the module is started.
+        self.log = None
+        # For Typing and VS Code method abstraction
+        self.log: UserLogger
 
     def update_agent_state(self, agent_state: AgentState) -> None:
         """

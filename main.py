@@ -7,6 +7,7 @@
 # Description: Core Execution of the forward-facing gui
 # =============================================================================
 import argparse
+import time
 
 from SWARMRDS.core.swarm import SWARM
 
@@ -39,15 +40,18 @@ if not return_user_boolean(args.download_data_only):
     if return_user_boolean(args.new_sub):
         sim_manager.setup_simulation(args.map_name, settings_file_name="settings/{}.json".format(args.sim_settings))
 
-    new_simulation = sim_manager.build_simulation(args.sim_name, settings_file_name="{}.json".format(args.sim_settings), trajectory_file_name="{}.json".format(args.trajectory))
+    new_simulation = sim_manager.build_simulation(args.map_name, args.sim_name, settings_file_name="{}.json".format(args.sim_settings), trajectory_file_name="{}.json".format(args.trajectory))
 
     try:
         print("\nRunning {} simulation in the {} environment".format(args.sim_name, args.map_name))
-        completed = sim_manager.run_simulation(args.map_name, args.sim_name, ip_address=args.ip_address)
-        # Automatically download data if the simulation completed
-        if completed:
-             sim_manager.extract_data(args.sim_name)
+        sim_manager.run_simulation(args.map_name, args.sim_name, ip_address=args.ip_address)
     except KeyboardInterrupt:
-        pass
+        print("\n\nSimulation Terminated by User")
+        print("Waiting for server to shutdown....")
+        time.sleep(5)
+
+answer = input("Would you like to download data? (y/n)")
+if return_user_boolean(answer):
+    sim_manager.extract_data(args.sim_name)
 
 print("Run completed!")

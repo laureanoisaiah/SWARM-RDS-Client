@@ -212,11 +212,11 @@ class SWARM:
         """
         with open("{}".format(settings_file_name), "r") as file:
             settings = json.load(file)
-
+            
         settings["Environment"]["Name"] = map_name
 
         with open("{}".format(settings_file_name), "w") as file:
-            json.dump(settings, file)
+            json.dump(settings, file, indent=4)
 
         return
 
@@ -505,6 +505,7 @@ class SWARM:
 
     def build_simulation(
         self,
+        map_name: str,
         custom_name: str = None,
         settings_file_name: str = "DefaultSimulationSettings.json",
         trajectory_file_name: str = "DefaultTrajectory.json",
@@ -523,6 +524,21 @@ class SWARM:
         ### Outputs:
         - The simulation name as a string
         """
+        valid = self.validate_environment_name(map_name)
+
+        if not valid:
+            print("Environment name is invalid!")
+            return
+
+        print("Reading map name from {}".format(settings_file_name))
+        if self._file_path is not None:
+            file_name = self._file_path + "/" + submission_list_location  + "/" + settings_file_name
+        else:
+            file_name = submission_list_location  + "/" + settings_file_name
+        settings_map_name = self.read_map_name_from_settings(file_name)
+        if map_name != settings_map_name:
+            self.set_environment_name(file_name, map_name)
+
         if custom_name:
             sim_name = custom_name
         else:
