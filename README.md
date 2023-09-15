@@ -118,7 +118,7 @@ You will then see the following screen, providing an IP address of the server to
 ![Server Access Request Successful](images/ServerAccessRequest.png)
   
 You can restart the system and turn it off when you are finished. If you do not submit a Simulation for an hour,
-the system will automatically turn off.
+the system will automatically turn off./
 ### Running a Simulation
 
 ```

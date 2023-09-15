@@ -1,7 +1,7 @@
 {
     "ID": 0,
     "SimulationName": "example",
-    "RunLength": 140.0,
+    "RunLength": 280,
     "Scenario": {
         "Name": "Navigation",
         "Options": {
